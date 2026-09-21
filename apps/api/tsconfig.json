@@ -10,6 +10,7 @@
     "experimentalDecorators": true,
     "exactOptionalPropertyTypes": true,
     "allowSyntheticDefaultImports": true,
+    "types": ["node"],
     "target": "ES2021",
     "lib": ["ES2022"],
     "sourceMap": true,
