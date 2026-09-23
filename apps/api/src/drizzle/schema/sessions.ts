@@ -11,13 +11,14 @@ export const sessions = pgTable(
       .primaryKey()
       .notNull()
       .$defaultFn(() => ulid().toLowerCase()),
+    userId: varchar("user_id", { length: 26 })
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+
     expiresAt: timestamp("expires_at").notNull(),
     token: text("token").notNull().unique(),
     ipAddress: text("ip_address"),
     userAgent: text("user_agent"),
-    userId: text("user_id")
-      .notNull()
-      .references(() => users.id, { onDelete: "cascade" }),
     ...timestamps,
   },
   (table) => [index("sessions_userId_idx").on(table.userId)],

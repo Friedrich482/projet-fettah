@@ -11,11 +11,12 @@ export const accounts = pgTable(
       .primaryKey()
       .notNull()
       .$defaultFn(() => ulid().toLowerCase()),
-    accountId: text("account_id").notNull(),
-    providerId: text("provider_id").notNull(),
-    userId: text("user_id")
+    userId: varchar("user_id", { length: 26 })
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
+
+    accountId: text("account_id").notNull(),
+    providerId: text("provider_id").notNull(),
     accessToken: text("access_token"),
     refreshToken: text("refresh_token"),
     idToken: text("id_token"),
