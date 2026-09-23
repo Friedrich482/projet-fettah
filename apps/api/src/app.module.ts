@@ -1,5 +1,8 @@
 import { Module } from "@nestjs/common";
 import { ConfigModule } from "@nestjs/config";
+import { REQUEST } from "@nestjs/core";
+import { ORPCError, ORPCModule } from "@orpc/nest";
+import { experimental_RethrowHandlerPlugin as RethrowHandlerPlugin } from "@orpc/server/plugins";
 import { AuthModule as BetterAuthModule } from "@thallesp/nestjs-better-auth";
 
 import { AppController } from "./app.controller";
@@ -24,6 +27,23 @@ import { EnvModule } from "./env/env.module";
         return { auth: instance };
       },
       inject: [AuthService],
+    }),
+    ORPCModule.forRootAsync({
+      useFactory: (request: Request) => ({
+        context: { request },
+        eventIteratorKeepAliveInterval: 5000,
+        customJsonSerializers: [],
+        plugins: [
+          new RethrowHandlerPlugin({
+            filter: (error) => {
+              // Rethrow all non-ORPCError errors
+              // This allows unhandled exceptions to bubble up to NestJS global exception filters
+              return !(error instanceof ORPCError);
+            },
+          }),
+        ],
+      }),
+      inject: [REQUEST],
     }),
     EnvModule,
     DrizzleModule,
