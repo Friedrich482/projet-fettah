@@ -6,7 +6,7 @@ from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
 
-from src.labhacker.client import APIClient
+from labhacker.client import APIClient
 
 labs_app = typer.Typer(help="Gestion et cycle de vie des labs de hacking.")
 console = Console()

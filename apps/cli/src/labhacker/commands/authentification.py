@@ -2,8 +2,8 @@ from typing import Annotated
 import typer
 from rich import print
 
-from src.labhacker.client import APIClient
-from src.labhacker.config import delete_config, load_config, save_config
+from labhacker.client import APIClient
+from labhacker.config import delete_config, load_config, save_config
 
 auth_app = typer.Typer(help="Gestion de la session et de l'authentification.")
 

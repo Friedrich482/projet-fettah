@@ -3,7 +3,7 @@ import requests
 import typer
 from rich import print
 
-from src.labhacker.config import get_api_url, get_token
+from labhacker.config import get_api_url, get_token
 
 
 class APIClient:
