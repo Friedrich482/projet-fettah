@@ -13,7 +13,7 @@
     "start": "nest start",
     "start:debug": "nest start --debug --watch",
     "start:prod": "NODE_ENV=production node dist/main.js",
-    "generate-auth-schema": "pnpm dlx auth@latest generate --config=./src/better-auth/utils/auth.ts --output=./src/drizzle/schema",
+    "generate-auth-schema": "pnpm dlx auth@latest generate --config=./src/auth/utils/auth.ts --output=./src/drizzle/schema",
     "generate": "drizzle-kit generate",
     "migrate": "drizzle-kit migrate",
     "studio": "drizzle-kit studio --port=4989",
@@ -30,11 +30,14 @@
     "@nestjs/core": "^11.0.1",
     "@nestjs/mapped-types": "*",
     "@nestjs/platform-express": "^11.0.1",
+    "@thallesp/nestjs-better-auth": "^2.8.0",
+    "better-auth": "^1.7.5",
     "dotenv": "^18.0.1",
     "drizzle-orm": "1.0.0-rc.4",
     "pg": "^8.23.0",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1",
+    "ulid": "^3.0.2",
     "zod": "^4.6.5"
   },
   "devDependencies": {

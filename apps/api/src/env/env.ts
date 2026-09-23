@@ -5,6 +5,13 @@ export const EnvSchema = z.object({
   PORT: z.coerce.number<number>().int().positive(),
   SERVER_URL: z.url(),
   DATABASE_URL: z.string().trim().min(1),
+  BETTER_AUTH_URL: z.url(),
+  BETTER_AUTH_SECRET: z
+    .base64()
+    .refine(
+      (value) => value.length >= 32,
+      "BETTER_AUTH_SECRET must be at least 32 characters",
+    ),
 });
 
 export type Env = z.infer<typeof EnvSchema>;
