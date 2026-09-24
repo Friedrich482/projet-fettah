@@ -1,5 +1,12 @@
 import { sql } from "drizzle-orm";
-import { check, integer, pgTable, text, varchar } from "drizzle-orm/pg-core";
+import {
+  check,
+  integer,
+  pgTable,
+  text,
+  unique,
+  varchar,
+} from "drizzle-orm/pg-core";
 import { ulid } from "ulid";
 
 import { timestamps } from "./columns.helpers";
@@ -24,5 +31,6 @@ export const images = pgTable(
     check("default_cpu_strictly_positive", sql`${table.defaultCpu} > 0`),
     check("default_ram_strictly_positive", sql`${table.defaultRam} > 0`),
     check("exposed_port_range", sql`${table.exposedPort} > 1024`),
+    unique("name_tag").on(table.name, table.tag),
   ],
 );
