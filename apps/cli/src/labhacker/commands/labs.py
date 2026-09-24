@@ -1,5 +1,5 @@
 import time
-from typing import Annotated
+from typing import Annotated, Optional
 import typer
 from rich import print
 from rich.console import Console
@@ -8,123 +8,200 @@ from rich.table import Table
 
 from labhacker.client import APIClient
 
-labs_app = typer.Typer(help="Gestion et cycle de vie des labs de hacking.")
+labs_app = typer.Typer(help="Gestion et réservation des environnements de lab.")
 console = Console()
 
 STATUS_COLORS = {
     "PENDING": "yellow",
-    "RUNNING": "blue",
+    "RUNNING": "cyan",
     "READY": "bold green",
+    "STOPPED": "magenta",
     "FAILED": "bold red",
-    "DESTROYED": "dim red",
+    "EXPIRED": "dim white",
 }
+
+
+def _format_resources(res_data: dict) -> str:
+    """Extrait dynamiquement les métadonnées de ressources sans aucune valeur en dur."""
+    resources = res_data.get("resources") or {}
+    cpu = resources.get("cpu") or res_data.get("cpu")
+    ram = resources.get("ram") or res_data.get("ram")
+
+    if cpu and ram:
+        return f"{cpu} / {ram}"
+    if cpu:
+        return str(cpu)
+    if ram:
+        return str(ram)
+    return "Non alloué"
 
 
 @labs_app.command("list")
 def list_labs():
-    """Lister tous vos environnements de lab."""
+    """Lister vos réservations d'instances avec leurs ressources et états (US30)."""
     client = APIClient()
-    response = client.get("/labs")
-    labs = response.json()
+    response = client.get("/reservations")
+    reservations = response.json()
 
-    if not labs:
-        print("[yellow]Aucun lab actif trouvé.[/yellow]")
+    if not reservations:
+        print("[yellow]Aucune réservation trouvée.[/yellow]")
         return
 
-    table = Table(title="Vos Environnements Lab Hacker", header_style="bold cyan")
+    table = Table(title="Vos Réservations Lab Hacker", header_style="bold cyan")
     table.add_column("ID", justify="center", style="dim")
-    table.add_column("Type de Lab", style="magenta")
+    table.add_column("Image / Machine", style="magenta")
     table.add_column("Statut", justify="center")
-    table.add_column("Accès / Connexion", style="white")
+    table.add_column("Worker", justify="center", style="blue")
+    table.add_column("Ressources", justify="center")
+    table.add_column("Temps restant", justify="center", style="yellow")
+    table.add_column("Accès", style="green")
 
-    for lab in labs:
-        st = lab.get("statut", "UNKNOWN")
+    for res in reservations:
+        st = str(res.get("statut", "UNKNOWN")).upper()
         color = STATUS_COLORS.get(st, "white")
         formatted_status = f"[{color}]{st}[/{color}]"
-        conn = lab.get("infos_connexion") or "-"
+
+        # Toutes les données sont lues dynamiquement depuis la réponse API
+        worker = res.get("worker_id") or res.get("worker") or "-"
+        resources_display = _format_resources(res)
+        remaining = res.get("temps_restant") or res.get("remaining_time") or "-"
+        access = res.get("infos_connexion") or res.get("access_url") or "-"
+        image_name = res.get("image") or res.get("machine_type") or "-"
 
         table.add_row(
-            str(lab.get("id")),
-            lab.get("lab_type", "-"),
+            str(res.get("id")),
+            image_name,
             formatted_status,
-            str(conn),
+            str(worker),
+            resources_display,
+            str(remaining),
+            str(access),
         )
 
     console.print(table)
 
 
+@labs_app.command("reserve")
+def reserve_lab(
+    image: Annotated[str, typer.Option("--image", "-i", prompt="Image demandée (ex: kali, ubuntu, web-pentest)", help="Image du lab")],
+    duration: Annotated[int, typer.Option("--duration", "-d", help="Durée de validité en minutes")] = 60,
+    cpu: Annotated[Optional[str], typer.Option("--cpu", help="Limite CPU souhaitée (ex: 2)")] = None,
+    ram: Annotated[Optional[str], typer.Option("--ram", help="Limite RAM souhaitée (ex: 2G)")] = None,
+    wait: Annotated[bool, typer.Option("--wait", "-w", help="Attendre que l'instance soit prête")] = False,
+):
+    """Créer une nouvelle réservation d'instance temporaire (US22, US29)."""
+    client = APIClient()
+    
+    # Construction dynamique de la requête
+    payload = {
+        "image": image,
+        "duration_minutes": duration,
+    }
+    if cpu:
+        payload["cpu"] = cpu
+    if ram:
+        payload["ram"] = ram
+
+    response = client.post("/reservations", json_data=payload)
+    data = response.json()
+    res_id = data.get("id")
+
+    print(f"[bold green][RÉSERVÉ][/bold green] Réservation #{res_id} enregistrée pour [cyan]{duration} min[/cyan].")
+
+    if not wait:
+        print(f"[yellow]Réservation en file d'attente (PENDING). Suivez l'état avec :[/yellow] [bold cyan]labhacker status {res_id}[/bold cyan]")
+        return
+
+    with console.status("[bold cyan]Attente du Scheduler et affectation d'un Worker...", spinner="dots") as status_ui:
+        while True:
+            time.sleep(2)
+            check_resp = client.get(f"/reservations/{res_id}")
+            current = check_resp.json()
+            st = str(current.get("statut", "")).upper()
+
+            if st == "RUNNING":
+                status_ui.update("[bold blue]Instance en cours de démarrage sur le Worker...")
+            elif st == "READY":
+                print(f"[bold green][PRÊT][/bold green] L'instance #{res_id} est opérationnelle !")
+                access = current.get("infos_connexion") or current.get("access_url") or "Non renseigné"
+                worker = current.get("worker_id") or current.get("worker") or "Inconnu"
+                res_display = _format_resources(current)
+                
+                console.print(
+                    Panel(
+                        f"[bold]Worker :[/bold] {worker}\n"
+                        f"[bold]Ressources :[/bold] {res_display}\n"
+                        f"[bold]Accès :[/bold] [green]{access}[/green]\n"
+                        f"[bold]Durée :[/bold] {duration} minutes",
+                        title=f"Lab #{res_id} Opérationnel",
+                        expand=False,
+                    )
+                )
+                break
+            elif st == "FAILED":
+                print(f"[bold red][ÉCHEC][/bold red] Échec du déploiement ou ressources épuisées sur les Workers.")
+                raise typer.Exit(code=1)
+
+
 @labs_app.command("status")
 def get_status(
-    lab_id: Annotated[str, typer.Argument(help="Identifiant du lab")],
+    reservation_id: Annotated[str, typer.Argument(help="Identifiant de la réservation")],
 ):
-    """Afficher les détails et informations de connexion d'un lab."""
+    """Afficher les détails complets d'une instance et sa réservation (US30)."""
     client = APIClient()
-    response = client.get(f"/labs/{lab_id}")
-    lab = response.json()
+    response = client.get(f"/reservations/{reservation_id}")
+    res = response.json()
 
-    st = lab.get("statut", "UNKNOWN")
+    st = str(res.get("statut", "UNKNOWN")).upper()
     color = STATUS_COLORS.get(st, "white")
-    conn = lab.get("infos_connexion") or "Non disponible"
+    access = res.get("infos_connexion") or res.get("access_url") or "Non disponible"
+    worker = res.get("worker_id") or res.get("worker") or "Non affecté"
+    resources_display = _format_resources(res)
+    remaining = res.get("temps_restant") or res.get("remaining_time") or "Inconnu"
 
     body = (
-        f"[bold]Type :[/bold] {lab.get('lab_type', '-')}\n"
+        f"[bold]Image :[/bold] {res.get('image', '-')}\n"
         f"[bold]Statut :[/bold] [{color}]{st}[/{color}]\n"
-        f"[bold]Conteneur :[/bold] {lab.get('conteneur_id', 'En cours de création')}\n"
-        f"[bold]Connexion :[/bold] [green]{conn}[/green]"
+        f"[bold]Worker affecté :[/bold] {worker}\n"
+        f"[bold]Ressources réelles :[/bold] {resources_display}\n"
+        f"[bold]Temps restant :[/bold] {remaining}\n"
+        f"[bold]Accès Reverse Proxy :[/bold] [green]{access}[/green]"
     )
-    console.print(Panel(body, title=f"Lab #{lab_id}", expand=False))
+    console.print(Panel(body, title=f"Détails Réservation #{reservation_id}", expand=False))
+
+
+@labs_app.command("start")
+def start_instance(
+    reservation_id: Annotated[str, typer.Argument(help="Identifiant de la réservation / machine")],
+):
+    """Démarrer ou réveiller une instance arrêtée (US05, US29)."""
+    client = APIClient()
+    client.post(f"/machines/{reservation_id}/start")
+    print(f"[bold green][DÉMARRÉ][/bold green] Ordre de démarrage transmis pour l'instance #{reservation_id}.")
+
+
+@labs_app.command("stop")
+def stop_instance(
+    reservation_id: Annotated[str, typer.Argument(help="Identifiant de la réservation / machine")],
+):
+    """Arrêter temporairement une instance sans la détruire (US05, US29)."""
+    client = APIClient()
+    client.post(f"/machines/{reservation_id}/stop")
+    print(f"[bold yellow][STOPPÉ][/bold yellow] Ordre d'arrêt transmis pour l'instance #{reservation_id}.")
 
 
 @labs_app.command("delete")
-def delete_lab(
-    lab_id: Annotated[str, typer.Argument(help="Identifiant du lab à détruire")],
+def delete_reservation(
+    reservation_id: Annotated[str, typer.Argument(help="Identifiant de la réservation à libérer")],
     force: Annotated[bool, typer.Option("--yes", "-y", help="Confirmer sans invite")] = False,
 ):
-    """Détruire un conteneur de lab existant."""
+    """Libérer une réservation et détruire l'instance associée (US24, US29)."""
     if not force:
-        confirm = typer.confirm(f"Êtes-vous sûr de vouloir détruire le lab #{lab_id} ?")
+        confirm = typer.confirm(f"Êtes-vous sûr de vouloir libérer et détruire la réservation #{reservation_id} ?")
         if not confirm:
-            print("[yellow]Destruction annulée.[/yellow]")
+            print("[yellow]Opération annulée.[/yellow]")
             return
 
     client = APIClient()
-    client.delete(f"/labs/{lab_id}")
-    print(f"[bold green][SUCCÈS][/bold green] Ordre de destruction envoyé pour le lab #{lab_id}.")
-
-
-@labs_app.command("create")
-def create_lab(
-    lab_type: Annotated[str, typer.Argument(help="Type de machine (ex: web-pentest-basic)")],
-    wait: Annotated[bool, typer.Option("--wait", "-w", help="Attendre que le lab soit opérationnel")] = False,
-):
-    """Demander le déploiement d'un nouveau lab."""
-    client = APIClient()
-    payload = {"lab_type": lab_type}
-    response = client.post("/labs", json_data=payload)
-    data = response.json()
-
-    lab_id = data.get("id")
-    print(f"[bold green][CRÉÉ][/bold green] Demande enregistrée avec succès (ID: [bold cyan]#{lab_id}[/bold cyan]).")
-
-    if not wait:
-        print("[yellow]Le lab est en file d'attente (PENDING). Utilisez 'labhacker status' pour suivre l'état.[/yellow]")
-        return
-
-    # Gestion de l'attente active avec Rich Status (Spinner)
-    with console.status("[bold cyan]Attente de l'ordonnanceur et du worker...", spinner="dots") as status_ui:
-        while True:
-            time.sleep(2)
-            check_resp = client.get(f"/labs/{lab_id}")
-            current = check_resp.json()
-            st = current.get("statut")
-
-            if st == "RUNNING":
-                status_ui.update(f"[bold blue]Worker en cours de démarrage du conteneur...")
-            elif st == "READY":
-                print(f"[bold green][PRÊT][/bold green] Le lab #{lab_id} est opérationnel !")
-                conn = current.get("infos_connexion", "Non renseigné")
-                print(Panel(f"[bold]Accès :[/bold] [green]{conn}[/green]", title="Connexion"))
-                break
-            elif st == "FAILED":
-                print(f"[bold red][ÉCHEC][/bold red] Le déploiement du lab #{lab_id} a échoué.")
-                raise typer.Exit(code=1)
+    client.delete(f"/reservations/{reservation_id}")
+    print(f"[bold green][LIBÉRÉ][/bold green] La réservation #{reservation_id} a été supprimée et le conteneur détruit.")
