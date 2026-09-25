@@ -12,6 +12,7 @@ import { AuthService } from "./auth/auth.service";
 import { DrizzleModule } from "./drizzle/drizzle.module";
 import { EnvSchema } from "./env/env";
 import { EnvModule } from "./env/env.module";
+import { ImagesModule } from './images/images.module';
 
 @Module({
   imports: [
@@ -48,6 +49,7 @@ import { EnvModule } from "./env/env.module";
     EnvModule,
     DrizzleModule,
     AuthModule,
+    ImagesModule,
   ],
   controllers: [AppController],
   providers: [AppService],
