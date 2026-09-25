@@ -32,5 +32,6 @@ export const images = pgTable(
     check("default_ram_strictly_positive", sql`${table.defaultRam} > 0`),
     check("exposed_port_range", sql`${table.exposedPort} > 1024`),
     unique("name_tag").on(table.name, table.tag),
+    unique("digest").on(table.digest),
   ],
 );
