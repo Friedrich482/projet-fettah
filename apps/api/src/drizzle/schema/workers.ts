@@ -13,7 +13,7 @@ export const workers = pgTable("workers", {
     .notNull()
     .$defaultFn(() => ulid().toLowerCase()),
 
-  name: text("name").notNull(),
+  name: text("name").notNull().unique(),
   status: workerStatusEnum("status").notNull().default("offline"),
   lastHeartbeatAt: timestamp("last_heartbeat_at"),
   ...timestamps,
