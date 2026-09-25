@@ -109,17 +109,17 @@ export class ImagesService {
       throw new BadRequestException("You need to specify at least one field");
     }
 
-    const [returningHotUpdateEntry] = await this.db
+    const [returningImage] = await this.db
       .update(images)
       .set({ ...setFields })
       .where(eq(images.id, id))
       .returning(this.imagesColumns);
 
-    if (!returningHotUpdateEntry) {
+    if (!returningImage) {
       throw new NotFoundException("Image not found");
     }
 
-    return returningHotUpdateEntry;
+    return returningImage;
   }
 
   async delete(deleteImageDto: DeleteImageDtoType) {
@@ -131,7 +131,7 @@ export class ImagesService {
       .returning(this.imagesColumns);
 
     if (!deletedImage) {
-      throw new NotFoundException("Hot update entry not found");
+      throw new NotFoundException("Image not found");
     }
 
     return deletedImage;

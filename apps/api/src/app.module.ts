@@ -13,6 +13,7 @@ import { DrizzleModule } from "./drizzle/drizzle.module";
 import { EnvSchema } from "./env/env";
 import { EnvModule } from "./env/env.module";
 import { ImagesModule } from './images/images.module';
+import { WorkersModule } from './workers/workers.module';
 
 @Module({
   imports: [
@@ -50,6 +51,7 @@ import { ImagesModule } from './images/images.module';
     DrizzleModule,
     AuthModule,
     ImagesModule,
+    WorkersModule,
   ],
   controllers: [AppController],
   providers: [AppService],
