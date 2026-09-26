@@ -9,6 +9,7 @@ import { AppController } from "./app.controller";
 import { AppService } from "./app.service";
 import { AuthModule } from "./auth/auth.module";
 import { AuthService } from "./auth/auth.service";
+import { ReservationsModule as ContractReservationsModule } from "./contract/reservations/reservations.module";
 import { DrizzleModule } from "./drizzle/drizzle.module";
 import { EnvSchema } from "./env/env";
 import { EnvModule } from "./env/env.module";
@@ -56,6 +57,7 @@ import { WorkersModule } from "./workers/workers.module";
     WorkersModule,
     ReservationsModule,
     MachinesModule,
+    ContractReservationsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

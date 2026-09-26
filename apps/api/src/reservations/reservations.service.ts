@@ -13,6 +13,7 @@ import {
 import {
   CreateReservationDtoType,
   DeleteReservationDtoType,
+  FindAllReservationsDtoType,
   FindOneReservationDtoType,
   UpdateReservationDtoType,
 } from "./reservations.dto";
@@ -59,6 +60,19 @@ export class ReservationsService {
     }
 
     return reservationFound;
+  }
+
+  async findAll(findAllReservationsDto: FindAllReservationsDtoType) {
+    const { userId } = findAllReservationsDto;
+
+    const { userId: _, ...rest } = this.reservationsColumns;
+
+    const userReservations = await this.db
+      .select(rest)
+      .from(reservations)
+      .where(eq(reservations.userId, userId));
+
+    return userReservations;
   }
 
   async update(updateReservationDto: UpdateReservationDtoType) {
