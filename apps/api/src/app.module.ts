@@ -13,6 +13,7 @@ import { DrizzleModule } from "./drizzle/drizzle.module";
 import { EnvSchema } from "./env/env";
 import { EnvModule } from "./env/env.module";
 import { ImagesModule } from "./images/images.module";
+import { MachinesModule } from "./machines/machines.module";
 import { ReservationsModule } from "./reservations/reservations.module";
 import { WorkersModule } from "./workers/workers.module";
 
@@ -54,6 +55,7 @@ import { WorkersModule } from "./workers/workers.module";
     ImagesModule,
     WorkersModule,
     ReservationsModule,
+    MachinesModule,
   ],
   controllers: [AppController],
   providers: [AppService],

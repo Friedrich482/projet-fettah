@@ -58,7 +58,7 @@ export class WorkersService {
     return createdWorker;
   }
 
-  private async retrieveWorker(sqlEqualClause: SQL | undefined) {
+  private async retrieveWorker(sqlEqualClause: SQL) {
     const [workerFound] = await this.db
       .select(this.workersColumns)
       .from(workers)
