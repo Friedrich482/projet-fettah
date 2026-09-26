@@ -7,7 +7,7 @@ export const ReservationSchema = z.object({
   userId: z.ulid(),
   status: z.enum(RESERVATION_STATUSES),
   duration: z.int().positive(),
-  expiresAt: z.date(),
+  expiresAt: z.date().nullable(),
   endedAt: z.date().nullable(),
 });
 

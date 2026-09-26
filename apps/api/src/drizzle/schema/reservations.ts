@@ -33,7 +33,7 @@ export const reservations = pgTable(
 
     status: reservationStatusEnum("status").notNull(),
     duration: integer("duration").notNull(),
-    expiresAt: timestamp("expires_at").notNull(),
+    expiresAt: timestamp("expires_at"),
     endedAt: timestamp("ended_at"),
     ...timestamps,
   },
