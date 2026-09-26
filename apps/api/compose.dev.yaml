@@ -17,6 +17,30 @@ services:
     env_file:
       - .env.postgres
 
+  redis:
+    image: redis:8.10.2-alpine
+    container_name: projet-deploiement-dev-redis
+    ports:
+      - 127.0.0.1:6380:6379
+    command: /bin/sh -c 'redis-server --requirepass "$$REDIS_HOST_PASSWORD"'
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          'redis-cli -a "$$REDIS_HOST_PASSWORD" ping | grep -q PONG',
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+    volumes:
+      - projet-deploiement_redis:/data
+    env_file:
+      - .env.redis
+
 volumes:
   projet-deploiement_postgres:
     name: projet-deploiement_postgres_db
+
+  projet-deploiement_redis:
+    name: projet-deploiement_redis_db
