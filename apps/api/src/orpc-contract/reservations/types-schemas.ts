@@ -14,3 +14,11 @@ export const ReservationSchema = z.object({
 export const GetUserReservationsOutputSchema = z.array(
   ReservationSchema.omit({ userId: true }),
 );
+
+export const GetUserReservationInputSchema = ReservationSchema.pick({
+  id: true,
+});
+
+export const GetUserReservationOutputSchema = ReservationSchema.omit({
+  userId: true,
+});

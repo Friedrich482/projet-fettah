@@ -6,7 +6,10 @@ export const CreateReservationDto = z.object({
   ...ReservationDto.omit({ id: true }).shape,
 });
 
-export const FindOneReservationDto = ReservationDto.pick({ id: true });
+export const FindOneReservationDto = ReservationDto.pick({
+  id: true,
+  userId: true,
+});
 
 export const FindAllReservationsDto = z.object({
   userId: z.ulid(),

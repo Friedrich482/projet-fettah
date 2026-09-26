@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { NodePgDatabase } from "drizzle-orm/node-postgres";
 
 import { DRIZZLE_ASYNC_PROVIDER } from "@/drizzle/constants";
@@ -47,12 +47,12 @@ export class ReservationsService {
   }
 
   async findOne(findOneReservationDto: FindOneReservationDtoType) {
-    const { id } = findOneReservationDto;
+    const { id, userId } = findOneReservationDto;
 
     const [reservationFound] = await this.db
       .select(this.reservationsColumns)
       .from(reservations)
-      .where(eq(reservations.id, id))
+      .where(and(eq(reservations.id, id), eq(reservations.userId, userId)))
       .limit(1);
 
     if (!reservationFound) {

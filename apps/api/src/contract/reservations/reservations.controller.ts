@@ -10,6 +10,16 @@ import { ReservationsService } from "./reservations.service";
 export class ReservationsController {
   constructor(private readonly reservationsService: ReservationsService) {}
 
+  @Implement(contract.reservations.findOne)
+  findOne(@Session() session: UserSession) {
+    return implement(contract.reservations.findOne).handler(({ input }) =>
+      this.reservationsService.findOne({
+        ...input,
+        userId: session.user.id,
+      }),
+    );
+  }
+
   @Implement(contract.reservations.findAll)
   findAll(@Session() session: UserSession) {
     return implement(contract.reservations.findAll).handler(() =>
