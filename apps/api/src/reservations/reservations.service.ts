@@ -7,6 +7,7 @@ import {
   BadRequestException,
   Inject,
   Injectable,
+  InternalServerErrorException,
   NotFoundException,
 } from "@nestjs/common";
 
@@ -34,14 +35,21 @@ export class ReservationsService {
     private readonly db: NodePgDatabase,
   ) {}
 
-  async create(createReservationDto: CreateReservationDtoType) {
+  async create(
+    createReservationDto: CreateReservationDtoType,
+    executor: NodePgDatabase = this.db,
+  ) {
     const { userId, status, duration, expiresAt, endedAt } =
       createReservationDto;
 
-    const [createdReservation] = await this.db
+    const [createdReservation] = await executor
       .insert(reservations)
       .values({ userId, status, duration, expiresAt, endedAt })
       .returning(this.reservationsColumns);
+
+    if (!createdReservation) {
+      throw new InternalServerErrorException("Failed to create reservation");
+    }
 
     return createdReservation;
   }

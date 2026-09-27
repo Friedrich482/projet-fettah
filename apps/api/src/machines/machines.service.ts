@@ -39,7 +39,10 @@ export class MachinesService {
     private readonly db: NodePgDatabase,
   ) {}
 
-  async create(createMachineDto: CreateMachineDtoType) {
+  async create(
+    createMachineDto: CreateMachineDtoType,
+    executor: NodePgDatabase = this.db,
+  ) {
     const {
       reservationId,
       imageId,
@@ -53,7 +56,7 @@ export class MachinesService {
       destroyedAt,
     } = createMachineDto;
 
-    const [existingMachineWithSameName] = await this.db
+    const [existingMachineWithSameName] = await executor
       .select({ name: machines.name })
       .from(machines)
       .where(eq(machines.name, name))
@@ -64,7 +67,7 @@ export class MachinesService {
     }
 
     if (containerId) {
-      const [existingMachineWithSameContainerId] = await this.db
+      const [existingMachineWithSameContainerId] = await executor
         .select({ containerId: machines.containerId })
         .from(machines)
         .where(eq(machines.containerId, containerId))
@@ -75,7 +78,7 @@ export class MachinesService {
       }
     }
 
-    const [createdMachine] = await this.db
+    const [createdMachine] = await executor
       .insert(machines)
       .values({
         reservationId,

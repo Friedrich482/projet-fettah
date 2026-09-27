@@ -1,10 +1,25 @@
 import { oc, populateContractRouterPaths } from "@orpc/contract";
 
 import {
+  CreateReservationInputSchema,
+  CreateReservationOutputSchema,
   GetUserReservationInputSchema,
   GetUserReservationOutputSchema,
   GetUserReservationsOutputSchema,
 } from "./types-schemas";
+
+const createReservationContract = oc
+  .route({
+    method: "POST",
+    path: "/reservations",
+    operationId: "createReservation",
+    summary: "Create a reservation",
+    description:
+      "This endpoint creates a reservation for a specific user along with its machine",
+    successDescription: "The reservation and its machine are created",
+  })
+  .input(CreateReservationInputSchema)
+  .output(CreateReservationOutputSchema);
 
 const getUserReservationsContract = oc
   .route({
@@ -30,6 +45,7 @@ const getUserReservationContract = oc
   .output(GetUserReservationOutputSchema);
 
 export const contrat = populateContractRouterPaths({
+  create: createReservationContract,
   findAll: getUserReservationsContract,
   findOne: getUserReservationContract,
 });
