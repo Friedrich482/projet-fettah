@@ -4,18 +4,20 @@ const machines = [
         name: "Web Pentest Basic",
         description: "Basic environment for web penetration testing.",
         image: "web-pentest-basic",
-        cpu: 1,
-        ram: 512
+        cpuOptions: [1, 2],
+        ramOptions: [512, 1024, 2048]
     },
     {
         id: 2,
         name: "Buffer Overflow 101",
         description: "Environment for practicing basic buffer overflow exploitation.",
         image: "buffer-overflow-101",
-        cpu: 1,
-        ram: 512
+        cpuOptions: [1, 2],
+        ramOptions: [512, 1024, 2048]
     }
 ];
+
+const allowedDurations = [30, 60, 120, 180];
 
 const reservations = [];
 
@@ -29,9 +31,10 @@ async function getReservations() {
     return reservations;
 }
 
-function addReservation(machineId, duration) {
+function addReservation(machineId, duration, cpu, ram) {
     const machine = machines.find(machine => machine.id === machineId);
-    if (!machine) {
+
+    if (!machine || !machine.cpuOptions.includes(cpu) || !machine.ramOptions.includes(ram) || !allowedDurations.includes(duration)) {
         return null;
     }
 
@@ -42,10 +45,11 @@ function addReservation(machineId, duration) {
         id: nextReservationId++,
         machineId: machine.id,
         machineName: machine.name,
+        machineImage: machine.image,
         status: "PENDING",
         resources: {
-            cpu: machine.cpu,
-            ram: machine.ram
+            cpu,
+            ram
         },
         duration,
         startTime,
@@ -56,6 +60,30 @@ function addReservation(machineId, duration) {
 
     reservations.push(newReservation);
     return newReservation;
+}
+
+function startReservation(id) {
+    const reservation = reservations.find(reservation => reservation.id === id);
+
+    if (!reservation || reservation.status === "EXPIRED") {
+        return null;
+    }
+
+    reservation.status = "READY";
+    reservation.connection = "192.168.1.100:8080";
+    return reservation;
+}
+
+function stopReservation(id) {
+    const reservation = reservations.find(reservation => reservation.id === id);
+
+    if (!reservation || reservation.status === "EXPIRED") {
+        return null;
+    }
+
+    reservation.status = "STOPPED";
+    reservation.connection = null;
+    return reservation;
 }
 
 function removeReservation(id) {

@@ -9,8 +9,22 @@ function renderMachines(machines) {
             <article class="lab-card">
                 <h3>${machine.name}</h3>
                 <p>${machine.description}</p>
-                <p>CPU: ${machine.cpu}</p>
-                <p>RAM: ${machine.ram}</p>
+                <label>
+                    CPU:
+                    <select class="reservation-cpu">
+                        ${machine.cpuOptions.map(cpu => `
+                            <option value="${cpu}">${cpu} CPU</option>
+                        `).join("")}
+                    </select>
+                </label>
+                <label>
+                    RAM:
+                    <select class="reservation-ram">
+                        ${machine.ramOptions.map(ram => `
+                            <option value="${ram}">${ram} MB</option>
+                        `).join("")}
+                    </select>
+                </label>
                 <label>
                     Duration:
                     <select class="reservation-duration">
@@ -26,13 +40,23 @@ function renderMachines(machines) {
     });
 
     document.querySelectorAll(".create-lab-btn").forEach((button) => {
-        button.addEventListener("click", () => {
+        button.addEventListener("click", async () => {
             const card = button.closest(".lab-card");
+            const cpuSelect = card.querySelector(".reservation-cpu");
+            const ramSelect = card.querySelector(".reservation-ram");
             const durationSelect = card.querySelector(".reservation-duration");
 
             const machineId = Number(button.dataset.machineId);
+            const cpu = Number(cpuSelect.value);
+            const ram = Number(ramSelect.value);
             const duration = Number(durationSelect.value);
-            createReservation(machineId, duration);
+
+            try {
+                await createReservation(machineId, duration, cpu, ram);
+            } catch (error) {
+                console.error(error);
+                alert("Failed to create reservation.");
+            }
         });
     });
 }
@@ -50,6 +74,7 @@ function renderReservations(reservationsToRender) {
         if (reservation.status !== "EXPIRED" && Date.now() >= reservation.endTime.getTime()) {
             reservation.status = "EXPIRED";
             reservation.connection = null;
+            reservation.worker = null;
         }
 
         let connectionInfo = "";
@@ -64,32 +89,72 @@ function renderReservations(reservationsToRender) {
         const endTime = reservation.endTime.toLocaleString();
         const remainingMilliseconds = reservation.endTime - Date.now();
         const remainingMinutes = Math.max(0, Math.ceil(remainingMilliseconds / (60 * 1000)));
+        const workerInfo = reservation.worker ?? "Not assigned";
+
+        let lifecycleControls = "";
+        if (reservation.status === "READY") {
+            lifecycleControls = `<button class="stop-reservation-btn" data-reservation-id="${reservation.id}">Stop</button>`;
+        } else if (reservation.status === "STOPPED") {
+            lifecycleControls = `<button class="start-reservation-btn" data-reservation-id="${reservation.id}">Start</button>`;
+        }
 
         container.innerHTML += `
             <article class="lab-card">
                 <h3>${reservation.machineName}</h3>
+                <p>Reservation ID: ${reservation.id}</p>
+                <p>Image: ${reservation.machineImage}</p>
+                <p>Worker: ${workerInfo}</p>
                 <p>Status: ${reservation.status}</p>
-                <p>CPU: ${reservation.cpu}</p>
-                <p>RAM: ${reservation.ram} MB</p>
+                <p>CPU: ${reservation.resources.cpu}</p>
+                <p>RAM: ${reservation.resources.ram} MB</p>
                 <p>Duration: ${reservation.duration} minutes</p>
                 <p>Start: ${startTime}</p>
                 <p>End: ${endTime}</p>
                 <p>Remaining: ${remainingMinutes} minutes</p>
                 ${connectionInfo}
+                ${lifecycleControls}
                 <button class="destroy-lab-btn" data-reservation-id="${reservation.id}">Release</button>
             </article>
         `;
     });
 
+    document.querySelectorAll(".start-reservation-btn").forEach((button) => {
+        button.addEventListener("click", async () => {
+            try {
+                await startReservationUI(Number(button.dataset.reservationId));
+            } catch (error) {
+                console.error(error);
+                alert("Failed to start reservation.");
+            }
+        });
+    });
+
+    document.querySelectorAll(".stop-reservation-btn").forEach((button) => {
+        button.addEventListener("click", async () => {
+            try {
+                await stopReservationUI(Number(button.dataset.reservationId));
+            } catch (error) {
+                console.error(error);
+                alert("Failed to stop reservation.");
+            }
+        });
+    });
+
     document.querySelectorAll(".destroy-lab-btn").forEach((button) => {
-        button.addEventListener("click", () => {
-            destroyReservation(Number(button.dataset.reservationId));
+        button.addEventListener("click", async () => {
+            try {
+                await destroyReservation(Number(button.dataset.reservationId));
+            } catch (error) {
+                console.error(error);
+                alert("Failed to release reservation.");
+            }
         });
     });
 }
 
-async function createReservation(machineId, duration) {
-    const newReservation = addReservation(machineId, duration);
+async function createReservation(machineId, duration, cpu, ram) {
+    const newReservation = addReservation(machineId, duration, cpu, ram);
+
     if (!newReservation) {
         return null;
     }
@@ -104,6 +169,7 @@ async function createReservation(machineId, duration) {
         if (!currentReservations.includes(createdReservation)) return;
 
         createdReservation.status = "RUNNING";
+        createdReservation.worker = "worker-1";
         renderReservations(currentReservations);
     }, 2000);
 
@@ -115,6 +181,16 @@ async function createReservation(machineId, duration) {
         createdReservation.connection = "192.168.1.100:8080";
         renderReservations(currentReservations);
     }, 5000);
+}
+
+async function startReservationUI(id) {
+    startReservation(id);
+    renderReservations(await getReservations());
+}
+
+async function stopReservationUI(id) {
+    stopReservation(id);
+    renderReservations(await getReservations());
 }
 
 async function destroyReservation(id) {
@@ -129,11 +205,22 @@ async function initializeApp() {
     availableLabsContainer.innerHTML = "<p>Loading machines...</p>";
     userLabsContainer.innerHTML = "<p>Loading reservations...</p>";
 
-    const machines = await getMachines();
-    const reservations = await getReservations();
+    try {
+        const machines = await getMachines();
+        renderMachines(machines);
+        
+    } catch (error) {
+        console.error(error);
+        availableLabsContainer.innerHTML = "<p>Failed to load machines</p>";
+    }
 
-    renderMachines(machines);
-    renderReservations(reservations);
+    try {
+        const reservations = await getReservations();
+        renderReservations(reservations);
+    } catch (error) {
+        console.error(error);
+        userLabsContainer.innerHTML = "<p>Failed to load reservations</p>";
+    }
 }
 
 initializeApp();
