@@ -1,15 +1,14 @@
 import { eq, SQL } from "drizzle-orm";
 import { NodePgDatabase } from "drizzle-orm/node-postgres";
 
-import { DRIZZLE_ASYNC_PROVIDER } from "@/drizzle/constants";
-import { machines } from "@/drizzle/schema";
 import {
   BadRequestException,
   ConflictException,
-  Inject,
   Injectable,
   NotFoundException,
 } from "@nestjs/common";
+import { db } from "@repo/db/db";
+import { machines } from "@repo/db/schema";
 
 import {
   CreateMachineDtoType,
@@ -34,14 +33,9 @@ export class MachinesService {
     destroyedAt: machines.destroyedAt,
   };
 
-  constructor(
-    @Inject(DRIZZLE_ASYNC_PROVIDER)
-    private readonly db: NodePgDatabase,
-  ) {}
-
   async create(
     createMachineDto: CreateMachineDtoType,
-    executor: NodePgDatabase = this.db,
+    executor: NodePgDatabase = db,
   ) {
     const {
       reservationId,
@@ -103,7 +97,7 @@ export class MachinesService {
   }
 
   private async retrieveMachine(sqlEqualClause: SQL) {
-    const [machineFound] = await this.db
+    const [machineFound] = await db
       .select(this.machinesColumns)
       .from(machines)
       .where(sqlEqualClause)
@@ -148,7 +142,7 @@ export class MachinesService {
       throw new BadRequestException("You need to specify at least one field");
     }
 
-    const [returningMachine] = await this.db
+    const [returningMachine] = await db
       .update(machines)
       .set({ ...setFields })
       .where(eq(machines.id, id))
@@ -164,7 +158,7 @@ export class MachinesService {
   async delete(deleteMachineDto: DeleteMachineDtoType) {
     const { id } = deleteMachineDto;
 
-    const [deletedMachine] = await this.db
+    const [deletedMachine] = await db
       .delete(machines)
       .where(eq(machines.id, id))
       .returning(this.machinesColumns);

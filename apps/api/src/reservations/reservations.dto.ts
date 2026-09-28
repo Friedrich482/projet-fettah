@@ -1,6 +1,6 @@
 import z from "zod";
 
-import { ReservationSchema as ReservationDto } from "@/orpc-contract/reservations/types-schemas";
+import { ReservationSchema as ReservationDto } from "@repo/orpc-contract/reservations/types-schemas";
 
 export const CreateReservationDto = z.object({
   ...ReservationDto.omit({ id: true }).shape,

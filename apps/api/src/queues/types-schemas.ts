@@ -3,7 +3,7 @@ import z from "zod";
 import {
   MachineSchema,
   ReservationSchema,
-} from "@/orpc-contract/reservations/types-schemas";
+} from "@repo/orpc-contract/reservations/types-schemas";
 
 export const ProvisionJobSchema = z.object({
   ...MachineSchema.pick({

@@ -1,4 +1,3 @@
-import { DrizzleModule } from "@/drizzle/drizzle.module";
 import { ImagesModule as CrudImagesModule } from "@/images/images.module";
 import { MachinesModule as CrudMachinesModule } from "@/machines/machines.module";
 import { QueuesModule } from "@/queues/queues.module";
@@ -10,7 +9,6 @@ import { ReservationsService } from "./reservations.service";
 
 @Module({
   imports: [
-    DrizzleModule,
     CrudReservationsModule,
     CrudMachinesModule,
     CrudImagesModule,

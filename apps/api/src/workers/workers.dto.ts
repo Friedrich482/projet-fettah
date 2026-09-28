@@ -1,6 +1,6 @@
 import z from "zod";
 
-import { WORKERS_STATUSES } from "@/common/constants";
+import { WORKERS_STATUSES } from "@repo/common/constants";
 
 const WorkerDto = z.object({
   id: z.ulid(),

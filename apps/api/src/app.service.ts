@@ -1,5 +1,5 @@
-import { HealthOutputSchemaType as HealthDtoType } from "@/orpc-contract/health/types-schemas";
 import { Injectable } from "@nestjs/common";
+import { HealthOutputSchemaType as HealthDtoType } from "@repo/orpc-contract/health/types-schemas";
 
 @Injectable()
 export class AppService {

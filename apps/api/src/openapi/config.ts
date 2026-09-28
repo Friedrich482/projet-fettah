@@ -1,6 +1,6 @@
-import { contract } from "@/orpc-contract/contract";
 import { OpenAPIGenerator } from "@orpc/openapi";
 import { ZodToJsonSchemaConverter } from "@orpc/zod/zod4";
+import { contract } from "@repo/orpc-contract/contract";
 import { apiReference } from "@scalar/nestjs-api-reference";
 
 export const defineOpenApiReference = async () => {

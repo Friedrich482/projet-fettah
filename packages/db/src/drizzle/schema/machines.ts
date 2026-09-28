@@ -11,7 +11,7 @@ import {
 } from "drizzle-orm/pg-core";
 import { ulid } from "ulid";
 
-import { MACHINES_STATUSES } from "@/common/constants";
+import { MACHINES_STATUSES } from "@repo/common/constants";
 
 import { timestamps } from "./columns.helpers";
 import { images } from "./images";

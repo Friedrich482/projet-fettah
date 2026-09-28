@@ -1,15 +1,13 @@
 import { eq, SQL } from "drizzle-orm";
-import { NodePgDatabase } from "drizzle-orm/node-postgres";
 
-import { DRIZZLE_ASYNC_PROVIDER } from "@/drizzle/constants";
-import { workers } from "@/drizzle/schema";
 import {
   BadRequestException,
   ConflictException,
-  Inject,
   Injectable,
   NotFoundException,
 } from "@nestjs/common";
+import { db } from "@repo/db/db";
+import { workers } from "@repo/db/schema";
 
 import {
   CreateWorkerDtoType,
@@ -27,15 +25,10 @@ export class WorkersService {
     lastHeartbeatAt: workers.lastHeartbeatAt,
   };
 
-  constructor(
-    @Inject(DRIZZLE_ASYNC_PROVIDER)
-    private readonly db: NodePgDatabase,
-  ) {}
-
   async create(createWorkerDto: CreateWorkerDtoType) {
     const { name, status, lastHeartbeatAt } = createWorkerDto;
 
-    const [existingWorkerWithSameName] = await this.db
+    const [existingWorkerWithSameName] = await db
       .select({ name: workers.name })
       .from(workers)
       .where(eq(workers.name, name))
@@ -45,7 +38,7 @@ export class WorkersService {
       throw new ConflictException("This worker already exists");
     }
 
-    const [createdWorker] = await this.db
+    const [createdWorker] = await db
       .insert(workers)
       .values({ name, status, lastHeartbeatAt })
       .onConflictDoNothing()
@@ -59,7 +52,7 @@ export class WorkersService {
   }
 
   private async retrieveWorker(sqlEqualClause: SQL) {
-    const [workerFound] = await this.db
+    const [workerFound] = await db
       .select(this.workersColumns)
       .from(workers)
       .where(sqlEqualClause)
@@ -95,7 +88,7 @@ export class WorkersService {
       throw new BadRequestException("You need to specify at least one field");
     }
 
-    const [returningWorker] = await this.db
+    const [returningWorker] = await db
       .update(workers)
       .set({ ...setFields })
       .where(eq(workers.id, id))
@@ -111,7 +104,7 @@ export class WorkersService {
   async delete(deleteWorkerDto: DeleteWorkerDtoType) {
     const { id } = deleteWorkerDto;
 
-    const [deletedWorker] = await this.db
+    const [deletedWorker] = await db
       .delete(workers)
       .where(eq(workers.id, id))
       .returning(this.workersColumns);

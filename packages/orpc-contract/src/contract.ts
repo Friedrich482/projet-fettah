@@ -1,4 +1,4 @@
-import { populateContractRouterPaths } from "@orpc/nest";
+import { populateContractRouterPaths } from "@orpc/contract";
 
 import { contract as HealthContract } from "./health/contract";
 import { contrat as ReservationsContract } from "./reservations/contract";

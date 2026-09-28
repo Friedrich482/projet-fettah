@@ -1,6 +1,9 @@
 import z from "zod";
 
-import { MACHINES_STATUSES, RESERVATION_STATUSES } from "@/common/constants";
+import {
+  MACHINES_STATUSES,
+  RESERVATION_STATUSES,
+} from "@repo/common/constants";
 
 export const ReservationSchema = z.object({
   id: z.ulid(),

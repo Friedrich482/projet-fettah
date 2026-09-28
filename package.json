@@ -1,0 +1,7 @@
+{
+  "name": "projet-deploiement",
+  "private": true,
+  "engines": {
+    "node": ">=24"
+  }
+}

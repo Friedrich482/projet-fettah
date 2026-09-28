@@ -1,6 +1,6 @@
 import z from "zod";
 
-import { MachineSchema as MachineDto } from "@/orpc-contract/reservations/types-schemas";
+import { MachineSchema as MachineDto } from "@repo/orpc-contract/reservations/types-schemas";
 
 export const CreateMachineDto = z.object({
   ...MachineDto.omit({ id: true, containerId: true }).shape,

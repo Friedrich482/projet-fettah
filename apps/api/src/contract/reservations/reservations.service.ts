@@ -1,12 +1,11 @@
-import { NodePgDatabase } from "drizzle-orm/node-postgres";
 import { ulid } from "ulid";
 
-import { DRIZZLE_ASYNC_PROVIDER } from "@/drizzle/constants";
 import { ImagesService as CrudImagesService } from "@/images/images.service";
 import { MachinesService as CrudMachinesService } from "@/machines/machines.service";
 import { QueuesService } from "@/queues/queues.service";
 import { ReservationsService as CrudReservationsService } from "@/reservations/reservations.service";
-import { Inject, Injectable, NotFoundException } from "@nestjs/common";
+import { Injectable, NotFoundException } from "@nestjs/common";
+import { db } from "@repo/db/db";
 
 import {
   CreateReservationDtoType,
@@ -21,9 +20,6 @@ export class ReservationsService {
     private readonly crudMachinesService: CrudMachinesService,
     private readonly crudImagesService: CrudImagesService,
     private readonly queuesService: QueuesService,
-
-    @Inject(DRIZZLE_ASYNC_PROVIDER)
-    private readonly db: NodePgDatabase,
   ) {}
 
   async create(createReservationDto: CreateReservationDtoType) {
@@ -40,7 +36,7 @@ export class ReservationsService {
 
     const machineName = `vm-${ulid().toLowerCase()}`;
 
-    const { machine, reservation } = await this.db.transaction(async (tx) => {
+    const { machine, reservation } = await db.transaction(async (tx) => {
       const createdReservation = await this.crudReservationsService.create(
         {
           userId,

@@ -1,7 +1,7 @@
-import { contract } from "@/orpc-contract/contract";
 import { Controller } from "@nestjs/common";
 import { Implement } from "@orpc/nest";
 import { implement } from "@orpc/server";
+import { contract } from "@repo/orpc-contract/contract";
 import { Session, UserSession } from "@thallesp/nestjs-better-auth";
 
 import { ReservationsService } from "./reservations.service";

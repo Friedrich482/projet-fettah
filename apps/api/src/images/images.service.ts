@@ -1,15 +1,13 @@
 import { and, eq, SQL } from "drizzle-orm";
-import { NodePgDatabase } from "drizzle-orm/node-postgres";
 
-import { DRIZZLE_ASYNC_PROVIDER } from "@/drizzle/constants";
-import { images } from "@/drizzle/schema";
 import {
   BadRequestException,
   ConflictException,
-  Inject,
   Injectable,
   NotFoundException,
 } from "@nestjs/common";
+import { db } from "@repo/db/db";
+import { images } from "@repo/db/schema";
 
 import {
   CreateImageDtoType,
@@ -30,16 +28,11 @@ export class ImagesService {
     defaultCpu: images.defaultCpu,
   };
 
-  constructor(
-    @Inject(DRIZZLE_ASYNC_PROVIDER)
-    private readonly db: NodePgDatabase,
-  ) {}
-
   async create(createImageDto: CreateImageDtoType) {
     const { name, tag, digest, exposedPort, defaultCpu, defaultRam } =
       createImageDto;
 
-    const [existingImageWithSameNameAndTag] = await this.db
+    const [existingImageWithSameNameAndTag] = await db
       .select({ name: images.name, tag: images.tag })
       .from(images)
       .where(and(eq(images.name, name), eq(images.tag, tag)))
@@ -49,7 +42,7 @@ export class ImagesService {
       throw new ConflictException("This image already exists");
     }
 
-    const [createdImage] = await this.db
+    const [createdImage] = await db
       .insert(images)
       .values({ name, tag, digest, exposedPort, defaultRam, defaultCpu })
       .onConflictDoNothing()
@@ -63,7 +56,7 @@ export class ImagesService {
   }
 
   private async retrieveImage(sqlEqualClause: SQL | undefined) {
-    const [imageFound] = await this.db
+    const [imageFound] = await db
       .select(this.imagesColumns)
       .from(images)
       .where(sqlEqualClause)
@@ -109,7 +102,7 @@ export class ImagesService {
       throw new BadRequestException("You need to specify at least one field");
     }
 
-    const [returningImage] = await this.db
+    const [returningImage] = await db
       .update(images)
       .set({ ...setFields })
       .where(eq(images.id, id))
@@ -125,7 +118,7 @@ export class ImagesService {
   async delete(deleteImageDto: DeleteImageDtoType) {
     const { id } = deleteImageDto;
 
-    const [deletedImage] = await this.db
+    const [deletedImage] = await db
       .delete(images)
       .where(eq(images.id, id))
       .returning(this.imagesColumns);

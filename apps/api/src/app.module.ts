@@ -3,14 +3,12 @@ import { ConfigModule } from "@nestjs/config";
 import { REQUEST } from "@nestjs/core";
 import { ORPCError, ORPCModule } from "@orpc/nest";
 import { experimental_RethrowHandlerPlugin as RethrowHandlerPlugin } from "@orpc/server/plugins";
-import { AuthModule as BetterAuthModule } from "@thallesp/nestjs-better-auth";
+import { AuthModule } from "@thallesp/nestjs-better-auth";
 
 import { AppController } from "./app.controller";
 import { AppService } from "./app.service";
-import { AuthModule } from "./auth/auth.module";
-import { AuthService } from "./auth/auth.service";
+import { auth } from "./auth/utils/auth";
 import { ReservationsModule as ContractReservationsModule } from "./contract/reservations/reservations.module";
-import { DrizzleModule } from "./drizzle/drizzle.module";
 import { EnvSchema } from "./env/env";
 import { EnvModule } from "./env/env.module";
 import { ImagesModule } from "./images/images.module";
@@ -26,13 +24,8 @@ import { WorkersModule } from "./workers/workers.module";
       validate: (env) => EnvSchema.parse(env),
       expandVariables: true,
     }),
-    BetterAuthModule.forRootAsync({
-      imports: [AuthModule],
-      useFactory: (authService: AuthService) => {
-        const instance = authService.getBetterAuthInstance();
-        return { auth: instance };
-      },
-      inject: [AuthService],
+    AuthModule.forRoot({
+      auth,
     }),
     ORPCModule.forRootAsync({
       useFactory: (request: Request) => ({
@@ -52,8 +45,6 @@ import { WorkersModule } from "./workers/workers.module";
       inject: [REQUEST],
     }),
     EnvModule,
-    DrizzleModule,
-    AuthModule,
     ImagesModule,
     WorkersModule,
     ReservationsModule,

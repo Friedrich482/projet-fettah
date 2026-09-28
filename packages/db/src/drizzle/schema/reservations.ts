@@ -10,7 +10,7 @@ import {
 } from "drizzle-orm/pg-core";
 import { ulid } from "ulid";
 
-import { RESERVATION_STATUSES } from "@/common/constants";
+import { RESERVATION_STATUSES } from "@repo/common/constants";
 
 import { timestamps } from "./columns.helpers";
 import { users } from "./users";

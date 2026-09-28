@@ -1,9 +1,7 @@
 {
+  "references": [{ "path": "../../packages/db/tsconfig.json" }],
   "compilerOptions": {
-    "composite": true,
     "module": "nodenext",
-    "declaration": true,
-    "declarationMap": true,
     "removeComments": true,
     "moduleResolution": "nodenext",
     "emitDecoratorMetadata": true,
@@ -18,7 +16,6 @@
     "paths": {
       "@/*": ["./src/*"]
     },
-    "incremental": true,
     "skipLibCheck": true,
     "strict": true,
     "strictNullChecks": true,

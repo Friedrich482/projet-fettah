@@ -1,15 +1,14 @@
 import { and, eq } from "drizzle-orm";
 import { NodePgDatabase } from "drizzle-orm/node-postgres";
 
-import { DRIZZLE_ASYNC_PROVIDER } from "@/drizzle/constants";
-import { reservations } from "@/drizzle/schema";
 import {
   BadRequestException,
-  Inject,
   Injectable,
   InternalServerErrorException,
   NotFoundException,
 } from "@nestjs/common";
+import { db } from "@repo/db/db";
+import { reservations } from "@repo/db/schema";
 
 import {
   CreateReservationDtoType,
@@ -30,14 +29,9 @@ export class ReservationsService {
     endedAt: reservations.endedAt,
   };
 
-  constructor(
-    @Inject(DRIZZLE_ASYNC_PROVIDER)
-    private readonly db: NodePgDatabase,
-  ) {}
-
   async create(
     createReservationDto: CreateReservationDtoType,
-    executor: NodePgDatabase = this.db,
+    executor: NodePgDatabase = db,
   ) {
     const { userId, status, duration, expiresAt, endedAt } =
       createReservationDto;
@@ -57,7 +51,7 @@ export class ReservationsService {
   async findOne(findOneReservationDto: FindOneReservationDtoType) {
     const { id, userId } = findOneReservationDto;
 
-    const [reservationFound] = await this.db
+    const [reservationFound] = await db
       .select(this.reservationsColumns)
       .from(reservations)
       .where(and(eq(reservations.id, id), eq(reservations.userId, userId)))
@@ -75,7 +69,7 @@ export class ReservationsService {
 
     const { userId: _, ...rest } = this.reservationsColumns;
 
-    const userReservations = await this.db
+    const userReservations = await db
       .select(rest)
       .from(reservations)
       .where(eq(reservations.userId, userId));
@@ -90,7 +84,7 @@ export class ReservationsService {
       throw new BadRequestException("You need to specify at least one field");
     }
 
-    const [returningReservation] = await this.db
+    const [returningReservation] = await db
       .update(reservations)
       .set({ ...setFields })
       .where(eq(reservations.id, id))
@@ -106,7 +100,7 @@ export class ReservationsService {
   async delete(deleteReservationDto: DeleteReservationDtoType) {
     const { id } = deleteReservationDto;
 
-    const [deletedReservation] = await this.db
+    const [deletedReservation] = await db
       .delete(reservations)
       .where(eq(reservations.id, id))
       .returning(this.reservationsColumns);

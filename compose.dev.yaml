@@ -15,7 +15,7 @@ services:
     volumes:
       - projet-deploiement_postgres:/var/lib/postgresql/data
     env_file:
-      - .env.postgres
+      - apps/api/.env.postgres
 
   redis:
     image: redis:8.10.2-alpine
@@ -36,7 +36,7 @@ services:
     volumes:
       - projet-deploiement_redis:/data
     env_file:
-      - .env.redis
+      - apps/api/.env.redis
 
 volumes:
   projet-deploiement_postgres:

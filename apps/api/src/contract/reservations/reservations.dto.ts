@@ -3,7 +3,7 @@ import z from "zod";
 import {
   CreateReservationInputSchema,
   GetUserReservationInputSchema as GetUserReservationDto,
-} from "@/orpc-contract/reservations/types-schemas";
+} from "@repo/orpc-contract/reservations/types-schemas";
 
 export const CreateReservationDto = CreateReservationInputSchema.extend({
   userId: z.ulid(),

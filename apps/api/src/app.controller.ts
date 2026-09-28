@@ -1,9 +1,9 @@
 import { Controller, Get } from "@nestjs/common";
 import { Implement, implement } from "@orpc/nest";
+import { contract } from "@repo/orpc-contract/contract";
 import { AllowAnonymous } from "@thallesp/nestjs-better-auth";
 
 import { AppService } from "./app.service";
-import { contract } from "./orpc-contract/contract";
 
 @Controller()
 export class AppController {
