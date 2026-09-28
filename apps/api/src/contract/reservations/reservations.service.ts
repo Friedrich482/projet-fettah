@@ -4,6 +4,7 @@ import { ulid } from "ulid";
 import { DRIZZLE_ASYNC_PROVIDER } from "@/drizzle/constants";
 import { ImagesService as CrudImagesService } from "@/images/images.service";
 import { MachinesService as CrudMachinesService } from "@/machines/machines.service";
+import { QueuesService } from "@/queues/queues.service";
 import { ReservationsService as CrudReservationsService } from "@/reservations/reservations.service";
 import { Inject, Injectable, NotFoundException } from "@nestjs/common";
 
@@ -19,6 +20,7 @@ export class ReservationsService {
     private readonly crudReservationsService: CrudReservationsService,
     private readonly crudMachinesService: CrudMachinesService,
     private readonly crudImagesService: CrudImagesService,
+    private readonly queuesService: QueuesService,
 
     @Inject(DRIZZLE_ASYNC_PROVIDER)
     private readonly db: NodePgDatabase,
@@ -70,6 +72,16 @@ export class ReservationsService {
         createdMachine;
 
       return { reservation: createdReservation, machine: rest };
+    });
+
+    await this.queuesService.enqueueProvision({
+      machineId: machine.id,
+      reservationId: reservation.id,
+      imageId: machine.imageId,
+      name: machine.name,
+      cpu: machine.cpu,
+      ram: machine.ram,
+      duration: reservation.duration,
     });
 
     return { machine, reservation };

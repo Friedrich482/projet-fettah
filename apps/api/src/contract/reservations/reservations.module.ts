@@ -1,6 +1,7 @@
 import { DrizzleModule } from "@/drizzle/drizzle.module";
 import { ImagesModule as CrudImagesModule } from "@/images/images.module";
 import { MachinesModule as CrudMachinesModule } from "@/machines/machines.module";
+import { QueuesModule } from "@/queues/queues.module";
 import { ReservationsModule as CrudReservationsModule } from "@/reservations/reservations.module";
 import { Module } from "@nestjs/common";
 
@@ -13,6 +14,7 @@ import { ReservationsService } from "./reservations.service";
     CrudReservationsModule,
     CrudMachinesModule,
     CrudImagesModule,
+    QueuesModule,
   ],
   controllers: [ReservationsController],
   providers: [ReservationsService],

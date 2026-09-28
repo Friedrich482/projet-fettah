@@ -22,6 +22,7 @@ import { WorkersModule } from "./workers/workers.module";
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
+      envFilePath: [".env.redis", ".env"],
       validate: (env) => EnvSchema.parse(env),
       expandVariables: true,
     }),

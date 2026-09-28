@@ -12,6 +12,9 @@ export const EnvSchema = z.object({
       (value) => value.length >= 32,
       "BETTER_AUTH_SECRET must be at least 32 characters",
     ),
+  REDIS_HOST: z.hostname(),
+  REDIS_PORT: z.coerce.number<number>().int().positive(),
+  REDIS_HOST_PASSWORD: z.string().trim().min(1),
 });
 
 export type Env = z.infer<typeof EnvSchema>;
