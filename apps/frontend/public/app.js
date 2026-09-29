@@ -198,6 +198,80 @@ async function destroyReservation(id) {
     renderReservations(await getReservations());
 }
 
+const loginForm = document.getElementById("login-form");
+
+loginForm.addEventListener("submit", async (event) => {
+    event.preventDefault();
+
+    const email = document.getElementById("login-email").value;
+    const password = document.getElementById("login-password").value;
+    const authMessage = document.getElementById("auth-message");
+
+    authMessage.textContent = "Logging in...";
+
+    try {
+        await login(email, password);
+        authMessage.textContent = "Logged in successfully.";
+        loginForm.reset();
+    } catch (error) {
+        console.error(error);
+        authMessage.textContent = "Login failed.";
+    }
+});
+
+const signupForm = document.getElementById("signup-form");
+
+signupForm.addEventListener("submit", async (event) => {
+    event.preventDefault();
+
+    const name = document.getElementById("signup-name").value;
+    const email = document.getElementById("signup-email").value;
+    const password = document.getElementById("signup-password").value;
+    const signupMessage = document.getElementById("signup-message");
+
+    signupMessage.textContent = "Creating account...";
+
+    try {
+        await signup(name, email, password);
+        signupMessage.textContent = "Account created successfully.";
+        signupForm.reset();
+    } catch (error) {
+        console.error(error);
+        signupMessage.textContent = "Sign up failed.";
+    }
+});
+
+const logoutButton = document.getElementById("logout-button");
+
+logoutButton.addEventListener("click", async () => {
+    const authMessage = document.getElementById("auth-message");
+
+    try {
+        await logout();
+        await checkSession();
+    } catch (error) {
+        console.error(error);
+        authMessage.textContent = "Logout failed.";
+    }
+});
+
+async function checkSession() {
+    const authMessage = document.getElementById("auth-message");
+
+    try {
+        const session = await getSession();
+
+        if (session?.user) {
+            authMessage.textContent = `Logged in as ${session.user.email}`;
+        } else {
+            authMessage.textContent = "Not logged in.";
+        }
+    } catch (error) {
+        console.error(error);
+        authMessage.textContent = "Failed to check session.";
+    }
+}
+
 async function initializeApp() {
     const availableLabsContainer = document.getElementById("available-labs");
     const userLabsContainer = document.getElementById("user-labs");
@@ -224,6 +298,7 @@ async function initializeApp() {
 }
 
 initializeApp();
+checkSession();
 
 setInterval(async() => {
     const reservations = await getReservations();

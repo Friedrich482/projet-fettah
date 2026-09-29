@@ -93,3 +93,70 @@ function removeReservation(id) {
         reservations.splice(index, 1);
     }
 }
+
+async function login(email, password) {
+    const response = await fetch("http://localhost:3040/auth/sign-in/email", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        credentials: "include",
+        body: JSON.stringify({
+            email: email,
+            password: password
+        })
+    });
+
+    if (!response.ok) {
+        throw new Error("Login failed");
+    }
+
+    return response.json();
+}
+
+async function logout() {
+    const response = await fetch("http://localhost:3040/auth/sign-out", {
+        method: "POST",
+        credentials: "include"
+    });
+
+    if (!response.ok) {
+        throw new Error("Logout failed");
+    }
+
+    return response.json();
+}
+
+async function signup(name, email, password) {
+    const response = await fetch("http://localhost:3040/auth/sign-up/email", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        credentials: "include",
+        body: JSON.stringify({
+            name,
+            email,
+            password
+        })
+    });
+
+    if (!response.ok) {
+        throw new Error("Sign up failed");
+    }
+
+    return response.json();
+}
+
+async function getSession() {
+    const response = await fetch("http://localhost:3040/auth/get-session", {
+        method: "GET",
+        credentials: "include"
+    });
+
+    if (!response.ok) {
+        throw new Error("Failed to get session");
+    }
+
+    return response.json();
+}
