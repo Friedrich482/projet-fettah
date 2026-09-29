@@ -2,9 +2,8 @@ import { Queue } from "bullmq";
 
 import { InjectQueue } from "@nestjs/bullmq";
 import { Injectable } from "@nestjs/common";
-
-import { PROVISION_JOB, PROVISION_QUEUE } from "./constants";
-import { ProvisionJob } from "./types-schemas";
+import { PROVISION_JOB, PROVISION_QUEUE } from "@repo/common/queues/constants";
+import { ProvisionJob } from "@repo/common/queues/types-schemas";
 
 @Injectable()
 export class QueuesService {
