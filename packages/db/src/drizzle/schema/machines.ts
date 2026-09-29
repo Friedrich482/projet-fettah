@@ -36,7 +36,7 @@ export const machines = pgTable(
     workerId: varchar("worker_id", { length: 26 }).references(
       () => workers.id,
       {
-        onDelete: "cascade",
+        onDelete: "set null",
       },
     ),
 
