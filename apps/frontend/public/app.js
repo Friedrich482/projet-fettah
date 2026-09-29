@@ -63,6 +63,7 @@ function renderMachines(machines) {
 
 function renderReservations(reservationsToRender) {
     const container = document.getElementById("user-labs");
+
     container.innerHTML = "";
 
     if (reservationsToRender.length === 0) {
@@ -71,49 +72,22 @@ function renderReservations(reservationsToRender) {
     }
 
     reservationsToRender.forEach((reservation) => {
-        if (reservation.status !== "EXPIRED" && Date.now() >= reservation.endTime.getTime()) {
-            reservation.status = "EXPIRED";
-            reservation.connection = null;
-            reservation.worker = null;
-        }
+        const expiresAt = reservation.expiresAt
+            ? new Date(reservation.expiresAt).toLocaleString()
+            : "Not set yet";
 
-        let connectionInfo = "";
-
-        if (reservation.connection) {
-            connectionInfo = `
-                <p>Connection: ${reservation.connection}</p>
-            `;
-        }
-
-        const startTime = reservation.startTime.toLocaleString();
-        const endTime = reservation.endTime.toLocaleString();
-        const remainingMilliseconds = reservation.endTime - Date.now();
-        const remainingMinutes = Math.max(0, Math.ceil(remainingMilliseconds / (60 * 1000)));
-        const workerInfo = reservation.worker ?? "Not assigned";
-
-        let lifecycleControls = "";
-        if (reservation.status === "READY") {
-            lifecycleControls = `<button class="stop-reservation-btn" data-reservation-id="${reservation.id}">Stop</button>`;
-        } else if (reservation.status === "STOPPED") {
-            lifecycleControls = `<button class="start-reservation-btn" data-reservation-id="${reservation.id}">Start</button>`;
-        }
+        const endedAt = reservation.endedAt
+            ? new Date(reservation.endedAt).toLocaleString()
+            : "Not ended";
 
         container.innerHTML += `
             <article class="lab-card">
-                <h3>${reservation.machineName}</h3>
+                <h3>Reservation</h3>
                 <p>Reservation ID: ${reservation.id}</p>
-                <p>Image: ${reservation.machineImage}</p>
-                <p>Worker: ${workerInfo}</p>
                 <p>Status: ${reservation.status}</p>
-                <p>CPU: ${reservation.resources.cpu}</p>
-                <p>RAM: ${reservation.resources.ram} MB</p>
                 <p>Duration: ${reservation.duration} minutes</p>
-                <p>Start: ${startTime}</p>
-                <p>End: ${endTime}</p>
-                <p>Remaining: ${remainingMinutes} minutes</p>
-                ${connectionInfo}
-                ${lifecycleControls}
-                <button class="destroy-lab-btn" data-reservation-id="${reservation.id}">Release</button>
+                <p>Expires at: ${expiresAt}</p>
+                <p>Ended at: ${endedAt}</p>
             </article>
         `;
     });
@@ -153,34 +127,16 @@ function renderReservations(reservationsToRender) {
 }
 
 async function createReservation(machineId, duration, cpu, ram) {
-    const newReservation = addReservation(machineId, duration, cpu, ram);
+    const machine = machines.find(machine => machine.id === machineId);
 
-    if (!newReservation) {
-        return null;
+    if (!machine || !machine.imageId) {
+        throw new Error("No backend image linked to this lab");
     }
 
-    renderReservations(await getReservations());
+    await createReservationRequest(machine.imageId, duration);
 
     const currentReservations = await getReservations();
-    const createdReservation = currentReservations.find(reservation => reservation.id === newReservation.id);
-
-    setTimeout(async () => {
-        const currentReservations = await getReservations();
-        if (!currentReservations.includes(createdReservation)) return;
-
-        createdReservation.status = "RUNNING";
-        createdReservation.worker = "worker-1";
-        renderReservations(currentReservations);
-    }, 2000);
-
-    setTimeout(async () => {
-        const currentReservations = await getReservations();
-        if (!currentReservations.includes(createdReservation)) return;
-
-        createdReservation.status = "READY";
-        createdReservation.connection = "192.168.1.100:8080";
-        renderReservations(currentReservations);
-    }, 5000);
+    renderReservations(currentReservations);
 }
 
 async function startReservationUI(id) {

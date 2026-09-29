@@ -1,6 +1,7 @@
 const machines = [
     {
         id: 1,
+        imageId: "01k6testwebpentest00000000",
         name: "Web Pentest Basic",
         description: "Basic environment for web penetration testing.",
         image: "web-pentest-basic",
@@ -28,7 +29,36 @@ async function getMachines() {
 }
 
 async function getReservations() {
-    return reservations;
+    const response = await fetch("http://localhost:3040/reservations", {
+        method: "GET",
+        credentials: "include"
+    });
+
+    if (!response.ok) {
+        throw new Error("Failed to load reservations");
+    }
+    
+    return response.json();
+}
+
+async function createReservationRequest(imageId, duration) {
+    const response = await fetch("http://localhost:3040/reservations", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        credentials: "include",
+        body: JSON.stringify({
+            imageId,
+            duration
+        })
+    });
+
+    if (!response.ok) {
+        throw new Error("Failed to create reservation");
+    }
+
+    return response.json();
 }
 
 function addReservation(machineId, duration, cpu, ram) {
