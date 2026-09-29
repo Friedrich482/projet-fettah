@@ -11,3 +11,12 @@ export const ProvisionJobSchema = z.object({
 });
 
 export type ProvisionJob = z.infer<typeof ProvisionJobSchema>;
+
+export const DestroyJobSchema = z.object({
+  reservationId: z.ulid(),
+  machineId: z.ulid(),
+  name: z.string().trim().min(1),
+  containerId: z.string().trim().min(1),
+});
+
+export type DestroyJob = z.infer<typeof DestroyJobSchema>;
