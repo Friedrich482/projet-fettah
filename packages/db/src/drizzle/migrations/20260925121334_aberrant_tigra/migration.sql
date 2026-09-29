@@ -1,0 +1,1 @@
+ALTER TABLE "images" ADD CONSTRAINT "digest" UNIQUE("digest");

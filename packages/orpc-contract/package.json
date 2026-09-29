@@ -1,0 +1,43 @@
+{
+  "name": "@repo/orpc-contract",
+  "version": "0.0.0",
+  "private": true,
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    "./*": {
+      "types": "./src/*.ts",
+      "default": "./dist/src/*.js"
+    }
+  },
+  "scripts": {
+    "dev": "tsc --watch",
+    "build": "tsc",
+    "lint": "eslint . --fix",
+    "format": "prettier --write \"**/*.ts\""
+  },
+  "files": [
+    "./dist/**"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "typesVersions": {
+    "*": {
+      "*": [
+        "src/*"
+      ]
+    }
+  },
+  "devDependencies": {
+    "prettier": "^3.8.3",
+    "typescript": "^5.9.3",
+    "eslint": "^9.39.2",
+    "@repo/eslint-config": "workspace:*"
+  },
+  "dependencies": {
+    "@orpc/contract": "^1.15.4",
+    "@repo/common": "workspace:*",
+    "zod": "4.5.2"
+  }
+}

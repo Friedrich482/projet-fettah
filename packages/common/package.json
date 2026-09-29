@@ -1,0 +1,38 @@
+{
+  "name": "@repo/common",
+  "version": "0.0.0",
+  "private": true,
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    "./constants": {
+      "types": "./src/constants.ts",
+      "default": "./dist/src/constants.js"
+    }
+  },
+  "scripts": {
+    "dev": "tsc --watch",
+    "build": "tsc",
+    "lint": "eslint . --fix",
+    "format": "prettier --write \"**/*.ts\""
+  },
+  "files": [
+    "./dist/**"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "typesVersions": {
+    "*": {
+      "*": [
+        "src/*"
+      ]
+    }
+  },
+  "devDependencies": {
+    "@repo/eslint-config": "workspace:*",
+    "prettier": "^3.8.3",
+    "eslint": "^9.39.2",
+    "typescript": "^5.9.3"
+  }
+}

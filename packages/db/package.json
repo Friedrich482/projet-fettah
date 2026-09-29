@@ -1,0 +1,55 @@
+{
+  "name": "@repo/db",
+  "version": "0.0.0",
+  "private": true,
+  "exports": {
+    "./db": {
+      "types": "./src/drizzle/db.ts",
+      "default": "./dist/src/drizzle/db.js"
+    },
+    "./schema": {
+      "types": "./src/drizzle/schema/index.ts",
+      "default": "./dist/src/drizzle/schema/index.js"
+    }
+  },
+  "scripts": {
+    "dev": "tsc --watch",
+    "build": "tsc",
+    "lint": "eslint . --fix",
+    "format": "prettier --write \"**/*.ts\"",
+    "generate": "drizzle-kit generate",
+    "migrate": "drizzle-kit migrate",
+    "studio": "drizzle-kit studio --port=4989"
+  },
+  "files": [
+    "./dist/**"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "typesVersions": {
+    "*": {
+      "*": [
+        "src/*"
+      ]
+    }
+  },
+  "devDependencies": {
+    "@repo/eslint-config": "workspace:*",
+    "@types/pg": "^8.23.1",
+    "drizzle-kit": "1.0.0-rc.4",
+    "eslint": "9.39.2",
+    "prettier": "^3.8.3",
+    "typescript": "^5.9.3"
+  },
+  "dependencies": {
+    "@repo/common": "workspace:*",
+    "dotenv": "^18.0.4",
+    "drizzle-orm": "1.0.0-rc.4",
+    "pg": "^8.23.0",
+    "ulid": "^3.0.2"
+  },
+  "imports": {
+    "#*": "./src/*"
+  }
+}
