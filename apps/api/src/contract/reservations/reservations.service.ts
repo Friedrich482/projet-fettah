@@ -4,7 +4,11 @@ import { ImagesService as CrudImagesService } from "@/images/images.service";
 import { MachinesService as CrudMachinesService } from "@/machines/machines.service";
 import { QueuesService } from "@/queues/queues.service";
 import { ReservationsService as CrudReservationsService } from "@/reservations/reservations.service";
-import { Injectable, NotFoundException } from "@nestjs/common";
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from "@nestjs/common";
 import { db } from "@repo/db/db";
 
 import {
@@ -23,15 +27,28 @@ export class ReservationsService {
   ) {}
 
   async create(createReservationDto: CreateReservationDtoType) {
-    const { imageId, duration, userId } = createReservationDto;
+    const { imageName, imageTag, machineCpu, machineRam, duration, userId } =
+      createReservationDto;
 
     const image = await this.crudImagesService.findOne({
-      type: "id",
-      id: imageId,
+      type: "name-tag",
+      name: imageName,
+      tag: imageTag,
     });
 
     if (!image) {
       throw new NotFoundException("Image not found");
+    }
+
+    if (machineCpu > image.defaultCpu) {
+      throw new BadRequestException(
+        `The cpu of the machine you requested exceeds the limit of ${image.defaultCpu} millicores for the ${image.name}:${image.tag} Docker image. Please enter a lower value`,
+      );
+    }
+    if (machineRam > image.defaultRam) {
+      throw new BadRequestException(
+        `The ram of the machine you requested exceeds the limit of ${image.defaultRam}MB for the ${image.name}:${image.tag} Docker image. Please enter a lower value`,
+      );
     }
 
     const machineName = `vm-${ulid().toLowerCase()}`;
@@ -51,10 +68,10 @@ export class ReservationsService {
       const createdMachine = await this.crudMachinesService.create(
         {
           reservationId: createdReservation.id,
-          imageId,
+          imageId: image.id,
           name: machineName,
-          cpu: image.defaultCpu,
-          ram: image.defaultRam,
+          cpu: machineCpu,
+          ram: machineRam,
           status: "pending",
           workerId: null,
           containerId: null,
@@ -64,10 +81,12 @@ export class ReservationsService {
         tx,
       );
 
-      const { workerId, lastError, destroyedAt, containerId, ...rest } =
+      const { status, ...restReservation } = createdReservation;
+
+      const { workerId, lastError, destroyedAt, containerId, ...restMachine } =
         createdMachine;
 
-      return { reservation: createdReservation, machine: rest };
+      return { reservation: restReservation, machine: restMachine };
     });
 
     await this.queuesService.enqueueProvision({
