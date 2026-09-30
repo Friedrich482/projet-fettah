@@ -1,5 +1,4 @@
 {
-  "references": [{ "path": "../../packages/db/tsconfig.json" }],
   "compilerOptions": {
     "module": "nodenext",
     "removeComments": true,
