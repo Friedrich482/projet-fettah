@@ -83,8 +83,14 @@ export class ReservationsService {
 
       const { status, ...restReservation } = createdReservation;
 
-      const { workerId, lastError, destroyedAt, containerId, ...restMachine } =
-        createdMachine;
+      const {
+        workerId,
+        lastError,
+        destroyedAt,
+        containerId,
+        reservationId,
+        ...restMachine
+      } = createdMachine;
 
       return { reservation: restReservation, machine: restMachine };
     });
@@ -99,7 +105,9 @@ export class ReservationsService {
       duration: reservation.duration,
     });
 
-    return { machine, reservation };
+    const { imageId, ...returningMachine } = machine;
+
+    return { machine: returningMachine, reservation };
   }
 
   async findOne(findOneReservationDto: FindOneReservationDtoType) {

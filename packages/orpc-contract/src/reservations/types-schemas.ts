@@ -73,5 +73,7 @@ export const CreateReservationOutputSchema = z.object({
     lastError: true,
     destroyedAt: true,
     containerId: true,
+    reservationId: true,
+    imageId: true,
   }),
 });
