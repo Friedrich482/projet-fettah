@@ -1,30 +1,32 @@
 console.log("Lab Hacker frontend loaded");
 
-function renderMachines(machines) {
+function renderImages(images) {
     const container = document.getElementById("available-labs");
     container.innerHTML = "";
 
-    machines.forEach((machine) => {
+    images.forEach((image) => {
         container.innerHTML += `
             <article class="lab-card">
-                <h3>${machine.name}</h3>
-                <p>${machine.description}</p>
+                <h3>${image.name}</h3>
+                <p>${image.description}</p>
+                <p>Image: ${image.name}:${image.tag}</p>
+                <p>Maximum CPU: ${image.defaultCpu}</p>
+                <p>Maximum RAM: ${image.defaultRam} MB</p>
+
                 <label>
                     CPU:
                     <select class="reservation-cpu">
-                        ${machine.cpuOptions.map(cpu => `
-                            <option value="${cpu}">${cpu} CPU</option>
-                        `).join("")}
+                        ${image.cpuOptions.map(cpu => `<option value="${cpu}">${cpu} CPU</option>`).join("")}
                     </select>
                 </label>
+
                 <label>
                     RAM:
                     <select class="reservation-ram">
-                        ${machine.ramOptions.map(ram => `
-                            <option value="${ram}">${ram} MB</option>
-                        `).join("")}
+                        ${image.ramOptions.map(ram => `<option value="${ram}">${ram} MB</option>`).join("")}
                     </select>
                 </label>
+
                 <label>
                     Duration:
                     <select class="reservation-duration">
@@ -34,7 +36,8 @@ function renderMachines(machines) {
                         <option value="180">3 hours</option>
                     </select>
                 </label>
-                <button class="create-lab-btn" data-machine-id="${machine.id}">Reserve</button>
+
+                <button class="create-lab-btn" data-image-name="${image.name}" data-image-tag="${image.tag}">Reserve</button>
             </article>
         `;
     });
@@ -46,13 +49,17 @@ function renderMachines(machines) {
             const ramSelect = card.querySelector(".reservation-ram");
             const durationSelect = card.querySelector(".reservation-duration");
 
-            const machineId = Number(button.dataset.machineId);
+            const imageName = button.dataset.imageName;
+            const imageTag = button.dataset.imageTag;
             const cpu = Number(cpuSelect.value);
             const ram = Number(ramSelect.value);
             const duration = Number(durationSelect.value);
 
             try {
-                await createReservation(machineId, duration, cpu, ram);
+                await createReservationRequest(imageName, imageTag, cpu, ram, duration);
+
+                const reservations = await getReservations();
+                renderReservations(reservations);
             } catch (error) {
                 console.error(error);
                 alert("Failed to create reservation.");
@@ -91,67 +98,6 @@ function renderReservations(reservationsToRender) {
             </article>
         `;
     });
-
-    document.querySelectorAll(".start-reservation-btn").forEach((button) => {
-        button.addEventListener("click", async () => {
-            try {
-                await startReservationUI(Number(button.dataset.reservationId));
-            } catch (error) {
-                console.error(error);
-                alert("Failed to start reservation.");
-            }
-        });
-    });
-
-    document.querySelectorAll(".stop-reservation-btn").forEach((button) => {
-        button.addEventListener("click", async () => {
-            try {
-                await stopReservationUI(Number(button.dataset.reservationId));
-            } catch (error) {
-                console.error(error);
-                alert("Failed to stop reservation.");
-            }
-        });
-    });
-
-    document.querySelectorAll(".destroy-lab-btn").forEach((button) => {
-        button.addEventListener("click", async () => {
-            try {
-                await destroyReservation(Number(button.dataset.reservationId));
-            } catch (error) {
-                console.error(error);
-                alert("Failed to release reservation.");
-            }
-        });
-    });
-}
-
-async function createReservation(machineId, duration, cpu, ram) {
-    const machine = machines.find(machine => machine.id === machineId);
-
-    if (!machine || !machine.imageId) {
-        throw new Error("No backend image linked to this lab");
-    }
-
-    await createReservationRequest(machine.imageId, duration);
-
-    const currentReservations = await getReservations();
-    renderReservations(currentReservations);
-}
-
-async function startReservationUI(id) {
-    startReservation(id);
-    renderReservations(await getReservations());
-}
-
-async function stopReservationUI(id) {
-    stopReservation(id);
-    renderReservations(await getReservations());
-}
-
-async function destroyReservation(id) {
-    removeReservation(id);
-    renderReservations(await getReservations());
 }
 
 const loginForm = document.getElementById("login-form");
@@ -236,8 +182,8 @@ async function initializeApp() {
     userLabsContainer.innerHTML = "<p>Loading reservations...</p>";
 
     try {
-        const machines = await getMachines();
-        renderMachines(machines);
+        const images = await getImages();
+        renderImages(images);
         
     } catch (error) {
         console.error(error);
