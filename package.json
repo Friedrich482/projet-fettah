@@ -1,7 +1,23 @@
 {
   "name": "projet-deploiement",
   "private": true,
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "turbo run dev",
+    "lint": "turbo run lint",
+    "format": "turbo run format",
+    "check-types": "turbo run check-types"
+  },
   "engines": {
     "node": ">=24"
+  },
+  "devEngines": {
+    "packageManager": {
+      "name": "pnpm",
+      "version": "11.18.0"
+    }
+  },
+  "devDependencies": {
+    "turbo": "^2.11.5"
   }
 }

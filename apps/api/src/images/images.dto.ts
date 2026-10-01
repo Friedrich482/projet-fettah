@@ -1,19 +1,6 @@
 import z from "zod";
 
-const ImageDto = z.object({
-  id: z.ulid(),
-  name: z.string().min(1).max(256),
-  tag: z
-    .string()
-    .regex(
-      /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$/,
-      { error: "The image tag must be a semantic version" },
-    ),
-  digest: z.hash("sha256"),
-  exposedPort: z.int().min(1024).max(65535),
-  defaultCpu: z.int().positive(),
-  defaultRam: z.int().positive(),
-});
+import { ImageSchema as ImageDto } from "@repo/orpc-contract/reservations/types-schemas";
 
 export const CreateImageDto = z.object({
   ...ImageDto.omit({ id: true, digest: true }).shape,

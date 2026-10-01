@@ -8,11 +8,16 @@
     "./constants": {
       "types": "./src/constants.ts",
       "default": "./dist/src/constants.js"
+    },
+    "./queues/*": {
+      "types": "./src/queues/*.ts",
+      "default": "./dist/src/queues/*.js"
     }
   },
   "scripts": {
     "dev": "tsc --watch",
     "build": "tsc",
+    "check-types": "tsc --noEmit",
     "lint": "eslint . --fix",
     "format": "prettier --write \"**/*.ts\""
   },
@@ -34,5 +39,8 @@
     "prettier": "^3.8.3",
     "eslint": "^9.39.2",
     "typescript": "^5.9.3"
+  },
+  "dependencies": {
+    "zod": "^4.6.5"
   }
 }

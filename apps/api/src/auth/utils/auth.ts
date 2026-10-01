@@ -1,6 +1,6 @@
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
-import { openAPI } from "better-auth/plugins";
+import { bearer, openAPI } from "better-auth/plugins";
 import { ulid } from "ulid";
 
 import { db } from "@repo/db/db";
@@ -35,5 +35,5 @@ export const auth = betterAuth({
   },
   basePath: "/auth",
   baseURL: process.env.BETTER_AUTH_URL,
-  plugins: [openAPI()],
+  plugins: [openAPI(), bearer()],
 });
