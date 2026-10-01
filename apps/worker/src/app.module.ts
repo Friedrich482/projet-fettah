@@ -4,6 +4,9 @@ import { ConfigModule } from "@nestjs/config";
 import { DockerModule } from "./docker/docker.module";
 import { EnvSchema } from "./env/env";
 import { EnvModule } from "./env/env.module";
+import { ImagesModule } from "./images/images.module";
+import { ReservationsModule } from "./reservations/reservations.module";
+import { WorkersModule } from "./workers/workers.module";
 
 @Module({
   imports: [
@@ -13,6 +16,9 @@ import { EnvModule } from "./env/env.module";
     }),
     EnvModule,
     DockerModule,
+    WorkersModule,
+    ReservationsModule,
+    ImagesModule,
   ],
 })
 export class AppModule {}

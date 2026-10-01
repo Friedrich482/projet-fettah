@@ -2,4 +2,6 @@ export const DOCKER_CLIENT = "DOCKER_CLIENT";
 
 export const NANOCPUS_PER_MILLICPU = 1_000_000;
 export const BYTES_PER_MEGABYTE = 1024 * 1024;
-export const PULL_TIMEOUT_MS = 600_000;
+export const BUILD_TIMEOUT_MS = 1_800_000;
+export const EXEC_TIMEOUT_MS = 60_000;
+export const EXEC_POLL_INTERVAL_MS = 100;

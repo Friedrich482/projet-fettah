@@ -41,7 +41,7 @@ export const ImageSchema = z.object({
     error: "The image tag must be a valid Docker tag",
   }),
   digest: z.hash("sha256"),
-  exposedPort: z.int().min(1024).max(65535),
+  exposedPort: z.int().min(1).max(65535),
   defaultCpu: z.int().positive(),
   defaultRam: z.int().positive(),
 });
