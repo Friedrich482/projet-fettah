@@ -68,7 +68,7 @@ function renderImages(images) {
                 renderReservations(reservations);
             } catch (error) {
                 console.error(error);
-                alert("Failed to create reservation.");
+                alert(error.message);
             }
         });
     });

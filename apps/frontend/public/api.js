@@ -57,7 +57,8 @@ async function createReservationRequest(imageName, imageTag, machineCpu, machine
     });
 
     if (!response.ok) {
-        throw new Error("Failed to create reservation");
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to create reservation");
     }
 
     return response.json();
