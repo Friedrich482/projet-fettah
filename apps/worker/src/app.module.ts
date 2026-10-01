@@ -1,6 +1,7 @@
 import { Module } from "@nestjs/common";
 import { ConfigModule } from "@nestjs/config";
 
+import { DockerModule } from "./docker/docker.module";
 import { EnvSchema } from "./env/env";
 import { EnvModule } from "./env/env.module";
 
@@ -11,6 +12,7 @@ import { EnvModule } from "./env/env.module";
       validate: (env) => EnvSchema.parse(env),
     }),
     EnvModule,
+    DockerModule,
   ],
 })
 export class AppModule {}
