@@ -124,8 +124,29 @@ function renderReservations(reservationsToRender) {
                 <p>Duration: ${reservation.duration} minutes</p>
                 <p>Expires at: ${expiresAt}</p>
                 <p>Ended at: ${endedAt}</p>
+                <button class="release-reservation-btn" data-reservation-id="${reservation.id}">Release</button>
             </article>
         `;
+    });
+
+    document.querySelectorAll(".release-reservation-btn").forEach((button) => {
+        button.addEventListener("click", async () => {
+            const reservationId = button.dataset.reservationId;
+
+            button.disabled = true;
+            button.textContent = "Releasing...";
+
+            try {
+                await deleteReservationRequest(reservationId);
+                const reservations = await getReservations();
+                renderReservations(reservations);
+            } catch (error) {
+                console.error(error);
+                alert(error.message);
+                button.disabled = false;
+                button.textContent = "Release";
+            }
+        });
     });
 }
 

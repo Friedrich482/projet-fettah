@@ -64,6 +64,37 @@ async function createReservationRequest(imageName, imageTag, machineCpu, machine
     return response.json();
 }
 
+async function deleteReservationRequest(id) {
+    const response = await fetch(`http://localhost:3040/reservations/${id}`,
+        {
+            method: "DELETE",
+            credentials: "include"
+        }
+    );
+
+    if (!response.ok) {
+        let errorMessage = "Failed to release reservation";
+
+        try {
+            const errorData = await response.json();
+
+            if (errorData.message) {
+                errorMessage = errorData.message;
+            }
+        } catch {
+            // Fallback message if response has no JSON body
+        }
+
+        throw new Error(errorMessage);
+    }
+
+    if (response.status === 204) {
+        return null;
+    }
+
+    return response.json();
+}
+
 async function login(email, password) {
     const response = await fetch("http://localhost:3040/auth/sign-in/email", {
         method: "POST",
