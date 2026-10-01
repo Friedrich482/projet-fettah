@@ -9,9 +9,10 @@ function renderImages(images) {
             <article class="lab-card">
                 <h3>${image.name}</h3>
                 <p>${image.description}</p>
-                <p>Image: ${image.name}:${image.tag}</p>
-                <p>Maximum CPU: ${image.defaultCpu}</p>
-                <p>Maximum RAM: ${image.defaultRam} MB</p>
+                <p>Version: ${image.tag}</p>
+                <p>Default CPU: ${image.defaultCpu}</p>
+                <p>Default RAM: ${image.defaultRam} MB</p>
+                <p>Exposed port: ${image.exposedPort}</p>
 
                 <label>
                     CPU:
@@ -206,7 +207,7 @@ async function initializeApp() {
     const availableLabsContainer = document.getElementById("available-labs");
     const userLabsContainer = document.getElementById("user-labs");
 
-    availableLabsContainer.innerHTML = "<p>Loading machines...</p>";
+    availableLabsContainer.innerHTML = "<p>Loading lab templates...</p>";
     userLabsContainer.innerHTML = "<p>Loading reservations...</p>";
 
     try {
@@ -215,7 +216,7 @@ async function initializeApp() {
         
     } catch (error) {
         console.error(error);
-        availableLabsContainer.innerHTML = "<p>Failed to load machines</p>";
+        availableLabsContainer.innerHTML = "<p>Failed to load lab templates</p>";
     }
 
     try {

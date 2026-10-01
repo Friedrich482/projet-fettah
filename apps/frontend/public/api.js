@@ -4,7 +4,8 @@ const imageTemplates = [
         tag: "latest",
         description: "Basic environment for web penetration testing.",
         defaultCpu: 1,
-        defaultRam: 512
+        defaultRam: 512,
+        exposedPort: 8080
     }
 ];
 
