@@ -14,10 +14,9 @@ def login(
     password: Annotated[str, typer.Option(prompt="Mot de passe", hide_input=True, help="Mot de passe")],
     username: Annotated[Optional[str], typer.Option(help="Pseudonyme pour la personnalisation locale")] = None,
 ):
-    """S'authentifier auprès de la plateforme via e-mail et enregistrer le jeton JWT."""
+    """S'authentifier auprès de Better-Auth via e-mail et enregistrer le jeton de session."""
     client = APIClient()
 
-    # Si aucun username n'est passé en option, on déduit un pseudo propre à partir de l'email
     if not username:
         username = email.split("@")[0]
 
@@ -26,16 +25,25 @@ def login(
         "password": password,
     }
 
-    # Appel vers le endpoint d'authentification exposé par le reverse proxy Traefik
-    response = client.post("/auth/token", json_data=payload)
-    data = response.json()
+    # Route officielle Better-Auth
+    response = client.post("/auth/sign-in/email", json_data=payload)
 
-    token = data.get("access_token") or data.get("token")
+    # Récupération du jeton depuis l'en-tête HTTP set-auth-token
+    token = response.headers.get("set-auth-token")
+
+    # Fallback au cas où le serveur le transmettrait aussi dans le body
+    if not token and response.text:
+        try:
+            data = response.json()
+            token = data.get("token") or data.get("access_token")
+        except Exception:
+            token = None
+
     if not token:
-        print("[bold red][ERREUR][/bold red] La réponse du serveur ne contient pas de jeton d'accès.")
+        print("[bold red][ERREUR][/bold red] Échec de récupération du jeton : en-tête 'set-auth-token' absent.")
         raise typer.Exit(code=1)
 
-    # Sauvegarde persistante dans ~/.labhacker/config.json
+    # Sauvegarde locale
     cfg = load_config()
     cfg["token"] = token
     cfg["email"] = email
@@ -77,10 +85,10 @@ def whoami():
 
 @auth_app.command("set-url")
 def set_url(
-    url: Annotated[str, typer.Argument(help="URL publique du reverse proxy Traefik (ex: http://localhost/api)")],
+    url: Annotated[str, typer.Argument(help="URL de l'API (ex: http://localhost:3040)")],
 ):
-    """Modifier l'adresse du reverse proxy cible."""
+    """Modifier l'adresse de base de l'API."""
     cfg = load_config()
     cfg["api_url"] = url.rstrip("/")
     save_config(cfg)
-    print(f"[bold green][SUCCÈS][/bold green] URL du proxy mise à jour : [cyan]{cfg['api_url']}[/cyan]")
+    print(f"[bold green][SUCCÈS][/bold green] URL cible mise à jour : [cyan]{cfg['api_url']}[/cyan]")
