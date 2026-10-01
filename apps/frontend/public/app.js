@@ -16,14 +16,14 @@ function renderImages(images) {
                 <label>
                     CPU:
                     <select class="reservation-cpu">
-                        ${image.cpuOptions.map(cpu => `<option value="${cpu}">${cpu} CPU</option>`).join("")}
+                        <option value="${image.defaultCpu}">${image.defaultCpu} CPU</option>
                     </select>
                 </label>
 
                 <label>
                     RAM:
                     <select class="reservation-ram">
-                        ${image.ramOptions.map(ram => `<option value="${ram}">${ram} MB</option>`).join("")}
+                        <option value="${image.defaultRam}">${image.defaultRam} MB</option>
                     </select>
                 </label>
 
@@ -56,7 +56,12 @@ function renderImages(images) {
             const duration = Number(durationSelect.value);
 
             try {
-                await createReservationRequest(imageName, imageTag, cpu, ram, duration);
+                const created = await createReservationRequest(imageName, imageTag, cpu, ram, duration);
+
+                console.log("Created reservation: ", created.reservation);
+                console.log("Created machine: ", created.machine);
+                storeMachine(created.machine);
+                renderMachines(getStoredMachines());
 
                 const reservations = await getReservations();
                 renderReservations(reservations);
@@ -65,6 +70,29 @@ function renderImages(images) {
                 alert("Failed to create reservation.");
             }
         });
+    });
+}
+
+function renderMachines(machinesToRender) {
+    const container = document.getElementById("machine-list");
+
+    container.innerHTML = "";
+
+    if (machinesToRender.length === 0) {
+        container.innerHTML = "<p>No machines created during this session.</p>";
+        return;
+    }
+
+    machinesToRender.forEach((machine) => {
+        container.innerHTML += `
+            <article class="lab-card">
+                <h3>${machine.name}</h3>
+                <p>Machine ID: ${machine.id}</p>
+                <p>Status: ${machine.status}</p>
+                <p>CPU: ${machine.cpu}</p>
+                <p>RAM: ${machine.ram} MB</p>
+            </article>
+        `;
     });
 }
 

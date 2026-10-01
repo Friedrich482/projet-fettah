@@ -1,17 +1,29 @@
-const images = [
+const imageTemplates = [
     {
         name: "web-pentest-basic",
         tag: "latest",
         description: "Basic environment for web penetration testing.",
-        cpuOptions: [1, 2],
-        ramOptions: [512, 1024, 2048],
-        defaultCpu: 2,
-        defaultRam: 2048
+        defaultCpu: 1,
+        defaultRam: 512
     }
 ];
 
+
+// Machines are currently only returned when a reservation is created.
+// There is no public GET /machines endpoint yet, so they're temporarily
+// stored only for the current frontend session.
+const machines = [];
+
 async function getImages() {
-    return images;
+    return imageTemplates;
+}
+
+function storeMachine(machine) {
+    machines.push(machine);
+}
+
+function getStoredMachines() {
+    return machines;
 }
 
 async function getReservations() {
