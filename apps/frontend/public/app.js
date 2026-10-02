@@ -163,7 +163,9 @@ loginForm.addEventListener("submit", async (event) => {
 
     try {
         await login(email, password);
-        authMessage.textContent = "Logged in successfully.";
+        await checkSession();
+        await refreshReservations();
+        startReservationPolling();
         loginForm.reset();
     } catch (error) {
         console.error(error);
@@ -200,6 +202,8 @@ logoutButton.addEventListener("click", async () => {
 
     try {
         await logout();
+        stopReservationPolling();
+        document.getElementById("user-labs").innerHTML = "<p>Log in to view your reservations.</p>";
         await checkSession();
     } catch (error) {
         console.error(error);
@@ -218,10 +222,49 @@ async function checkSession() {
         } else {
             authMessage.textContent = "Not logged in.";
         }
+
+        return session;
     } catch (error) {
         console.error(error);
         authMessage.textContent = "Failed to check session.";
+        return null;
     }
+}
+
+let reservationPollingId = null;
+let isRefreshingReservations = false;
+
+async function refreshReservations() {
+    if (isRefreshingReservations) {
+        return;
+    }
+
+    isRefreshingReservations = true;
+    const userLabsContainer = document.getElementById("user-labs");
+
+    try {
+        const reservations = await getReservations();
+        renderReservations(reservations);
+    } catch (error) {
+        console.error("Failed to refresh reservations: ", error);
+        userLabsContainer.innerHTML = "<p>Failed to refresh reservations.</p>";
+    } finally {
+        isRefreshingReservations = false;
+    }
+}
+
+function stopReservationPolling() {
+    if (reservationPollingId !== null) {
+        clearInterval(reservationPollingId);
+        reservationPollingId = null;
+    }
+}
+
+function startReservationPolling() {
+    stopReservationPolling();
+    reservationPollingId = setInterval(() => {
+        refreshReservations();
+    }, 5000);
 }
 
 async function initializeApp() {
@@ -229,7 +272,7 @@ async function initializeApp() {
     const userLabsContainer = document.getElementById("user-labs");
 
     availableLabsContainer.innerHTML = "<p>Loading lab templates...</p>";
-    userLabsContainer.innerHTML = "<p>Loading reservations...</p>";
+    userLabsContainer.innerHTML = "<p>Checking session...</p>";
 
     try {
         const images = await getImages();
@@ -240,19 +283,14 @@ async function initializeApp() {
         availableLabsContainer.innerHTML = "<p>Failed to load lab templates</p>";
     }
 
-    try {
-        const reservations = await getReservations();
-        renderReservations(reservations);
-    } catch (error) {
-        console.error(error);
-        userLabsContainer.innerHTML = "<p>Failed to load reservations</p>";
+    const session = await checkSession();
+
+    if (session?.user) {
+        await refreshReservations();
+        startReservationPolling();
+    } else {
+        userLabsContainer.innerHTML = "<p>Log in to view your reservations.</p>";
     }
 }
 
 initializeApp();
-checkSession();
-
-setInterval(async() => {
-    const reservations = await getReservations();
-    renderReservations(reservations);
-}, 5000);
