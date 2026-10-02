@@ -89,7 +89,7 @@ export class ReservationsProcessor extends WorkerHost {
     try {
       await db
         .update(machines)
-        .set({ status: "failed", lastError })
+        .set({ status: "failed", lastError, workerId: null })
         .where(eq(machines.id, machineId));
     } catch (databaseError) {
       this.logger.error("Failed to record the machine failure", databaseError);
@@ -110,6 +110,7 @@ export class ReservationsProcessor extends WorkerHost {
         .set({
           status: "running",
           containerId,
+          workerId: null,
           sshUsername: SSH_USERNAME,
           sshPassword,
           sshPort,
