@@ -2,6 +2,7 @@ import z from "zod";
 
 import { RESERVATION_STATUSES } from "@repo/common/constants";
 
+import { ImageSchema } from "../images/types-schemas";
 import { MachineSchema } from "../machines/types-schemas";
 
 export const ReservationSchema = z.object({
@@ -11,24 +12,6 @@ export const ReservationSchema = z.object({
   duration: z.int().positive(),
   expiresAt: z.date().nullable(),
   endedAt: z.date().nullable(),
-});
-
-export const ImageSchema = z.object({
-  id: z.ulid(),
-  name: z
-    .string()
-    .max(255)
-    .regex(
-      /^(?:(?:(?:[a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9-]*[a-zA-Z0-9])(?:\.(?:[a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9-]*[a-zA-Z0-9]))*|\[(?:[a-fA-F0-9:]+)\])(?::[0-9]+)?\/)?[a-z0-9]+(?:(?:[._]|__|[-]+)[a-z0-9]+)*(?:\/[a-z0-9]+(?:(?:[._]|__|[-]+)[a-z0-9]+)*)*$/,
-      { error: "The image name must be a valid Docker image name" },
-    ),
-  tag: z.string().regex(/^[A-Za-z0-9_][A-Za-z0-9_.-]{0,127}$/, {
-    error: "The image tag must be a valid Docker tag",
-  }),
-  digest: z.hash("sha256"),
-  exposedPort: z.int().min(1).max(65535),
-  defaultCpu: z.int().positive(),
-  defaultRam: z.int().positive(),
 });
 
 export const GetUserReservationsOutputSchema = z.array(

@@ -95,6 +95,15 @@ export class ImagesService {
     return image;
   }
 
+  async findAll() {
+    const returningImages = db
+      .select(this.imagesColumns)
+      .from(images)
+      .orderBy(images.name, images.tag);
+
+    return returningImages;
+  }
+
   async update(updateImageDto: UpdateImageDtoType) {
     const { id, ...setFields } = updateImageDto;
 

@@ -1,6 +1,6 @@
 import z from "zod";
 
-import { ImageSchema as ImageDto } from "@repo/orpc-contract/reservations/types-schemas";
+import { ImageSchema as ImageDto } from "@repo/orpc-contract/images/types-schemas";
 
 export const CreateImageDto = z.object({
   ...ImageDto.omit({ id: true, digest: true }).shape,
