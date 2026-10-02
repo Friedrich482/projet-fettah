@@ -63,11 +63,9 @@ function renderImages(images) {
 
                 console.log("Created reservation: ", created.reservation);
                 console.log("Created machine: ", created.machine);
-                storeMachine(created.machine);
-                renderMachines(getStoredMachines());
-
-                const reservations = await getReservations();
-                renderReservations(reservations);
+                
+                await refreshReservations();
+                await refreshMachines();
             } catch (error) {
                 console.error(error);
                 alert(error.message);
@@ -84,7 +82,7 @@ function renderMachines(machinesToRender) {
     container.innerHTML = "";
 
     if (machinesToRender.length === 0) {
-        container.innerHTML = "<p>No machines created during this session.</p>";
+        container.innerHTML = "<p>No machines found.</p>";
         return;
     }
 
@@ -169,6 +167,7 @@ loginForm.addEventListener("submit", async (event) => {
         await login(email, password);
         await checkSession();
         await refreshReservations();
+        await refreshMachines();
         startReservationPolling();
         loginForm.reset();
     } catch (error) {
@@ -195,6 +194,7 @@ signupForm.addEventListener("submit", async (event) => {
 
         if (session?.user) {
             await refreshReservations();
+            await refreshMachines();
             startReservationPolling();
         }
         
@@ -215,6 +215,7 @@ logoutButton.addEventListener("click", async () => {
         await logout();
         stopReservationPolling();
         document.getElementById("user-labs").innerHTML = "<p>Log in to view your reservations.</p>";
+        document.getElementById("machine-list").innerHTML = "<p>Log in to view your machines.</p>";
         await checkSession();
     } catch (error) {
         console.error(error);
@@ -310,7 +311,41 @@ function startReservationPolling() {
     stopReservationPolling();
     reservationPollingId = setInterval(() => {
         refreshReservations();
+        refreshMachines();
     }, 5000);
+}
+
+let isRefreshingMachines = false;
+
+async function refreshMachines() {
+    if (isRefreshingMachines) {
+        return;
+    }
+
+    isRefreshingMachines = true;
+    const machineListContainer = document.getElementById("machine-list");
+
+    try {
+        const machines = await getMachines();
+        renderMachines(machines);
+    } catch (error) {
+        console.error("Failed to refresh machines: ", error);
+
+        if (error.status === 401 || error.status === 403) {
+            currentSession = null;
+            stopReservationPolling();
+            updateAuthUI(null);
+
+            document.getElementById("auth-message").textContent = "Your session has expired. Please log in again.";
+            machineListContainer.innerHTML = "<p>Log in to view your machines.</p>";
+
+            return;
+        }
+
+        machineListContainer.innerHTML = "<p>Failed to refresh machines.</p>";
+    } finally {
+        isRefreshingMachines = false;
+    }
 }
 
 async function initializeApp() {
@@ -333,9 +368,11 @@ async function initializeApp() {
 
     if (session?.user) {
         await refreshReservations();
+        await refreshMachines();
         startReservationPolling();
     } else {
         userLabsContainer.innerHTML = "<p>Log in to view your reservations.</p>";
+        document.getElementById("machine-list").innerHTML = "<p>Log in to view your machines.</p>";
     }
 }
 

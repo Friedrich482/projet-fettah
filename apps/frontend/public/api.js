@@ -9,12 +9,6 @@ const imageTemplates = [
     }
 ];
 
-
-// Machines are currently only returned when a reservation is created.
-// There is no public GET /machines endpoint yet, so they're temporarily
-// stored only for the current frontend session.
-const machines = [];
-
 async function handleApiError(response, fallbackMessage) {
     let message = fallbackMessage;
 
@@ -37,12 +31,17 @@ async function getImages() {
     return imageTemplates;
 }
 
-function storeMachine(machine) {
-    machines.push(machine);
-}
+async function getMachines() {
+    const response = await fetch("http://localhost:3040/machines", {
+        method: "GET",
+        credentials: "include"
+    });
 
-function getStoredMachines() {
-    return machines;
+    if (!response.ok) {
+        await handleApiError(response, "Failed to load machines");
+    }
+
+    return response.json();
 }
 
 async function getReservations() {
