@@ -5,7 +5,20 @@ import {
   ConnectMachineOutputSchema,
   GetMachineInputSchema,
   GetMachineOutputSchema,
+  GetMachinesOutputSchema,
 } from "./types-schemas";
+
+const getMachinesContract = oc
+  .route({
+    method: "GET",
+    path: "/machines",
+    operationId: "getMachines",
+    summary: "Get the user machines",
+    description:
+      "This endpoint returns all the machines of a specific user, without their connection credentials",
+    successDescription: "The machines are returned",
+  })
+  .output(GetMachinesOutputSchema);
 
 const getMachineContract = oc
   .route({
@@ -34,6 +47,7 @@ const connectMachineContract = oc
   .output(ConnectMachineOutputSchema);
 
 export const contrat = populateContractRouterPaths({
+  findAll: getMachinesContract,
   findOne: getMachineContract,
   connect: connectMachineContract,
 });

@@ -32,6 +32,8 @@ export const GetMachineOutputSchema = MachineSchema.omit({
   sshPort: true,
 });
 
+export const GetMachinesOutputSchema = z.array(GetMachineOutputSchema);
+
 export const ConnectMachineInputSchema = MachineSchema.pick({
   id: true,
 });

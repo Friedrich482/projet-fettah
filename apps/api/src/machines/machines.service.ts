@@ -13,6 +13,7 @@ import { machines, reservations } from "@repo/db/schema";
 import {
   CreateMachineDtoType,
   DeleteMachineDtoType,
+  FindAllMachinesOwnedByUserDtoType,
   FindOneMachineDtoType,
   FindOneMachineOwnedByUserDtoType,
   UpdateMachineDtoType,
@@ -131,6 +132,20 @@ export class MachinesService {
     }
 
     return machineFound;
+  }
+
+  async findAllOwnedBy(
+    findAllMachinesOwnedByUserDto: FindAllMachinesOwnedByUserDtoType,
+  ) {
+    const { userId } = findAllMachinesOwnedByUserDto;
+
+    const userMachines = await db
+      .select(this.machinesColumns)
+      .from(machines)
+      .innerJoin(reservations, eq(machines.reservationId, reservations.id))
+      .where(eq(reservations.userId, userId));
+
+    return userMachines;
   }
 
   async findOne(findOneMachineDto: FindOneMachineDtoType) {

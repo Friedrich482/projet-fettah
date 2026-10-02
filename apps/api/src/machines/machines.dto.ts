@@ -37,6 +37,10 @@ export const FindOneMachineOwnedByUserDto = z.object({
   machineId: z.ulid(),
 });
 
+export const FindAllMachinesOwnedByUserDto = z.object({
+  userId: z.ulid(),
+});
+
 export const UpdateMachineDto = z.object({
   ...MachineDto.pick({ id: true }).shape,
   ...MachineDto.omit({ id: true }).exactPartial().shape,
@@ -50,6 +54,10 @@ export type FindOneMachineDtoType = z.infer<typeof FindOneMachineDto>;
 
 export type FindOneMachineOwnedByUserDtoType = z.infer<
   typeof FindOneMachineOwnedByUserDto
+>;
+
+export type FindAllMachinesOwnedByUserDtoType = z.infer<
+  typeof FindAllMachinesOwnedByUserDto
 >;
 
 export type UpdateMachineDtoType = z.infer<typeof UpdateMachineDto>;

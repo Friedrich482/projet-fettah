@@ -10,6 +10,13 @@ import { MachinesService } from "./machines.service";
 export class MachinesController {
   constructor(private readonly machinesService: MachinesService) {}
 
+  @Implement(contract.machines.findAll)
+  findAll(@Session() session: UserSession) {
+    return implement(contract.machines.findAll).handler(() =>
+      this.machinesService.findAll({ userId: session.user.id }),
+    );
+  }
+
   @Implement(contract.machines.findOne)
   findOne(@Session() session: UserSession) {
     return implement(contract.machines.findOne).handler(({ input }) =>

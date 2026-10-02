@@ -6,7 +6,11 @@ import {
   NotFoundException,
 } from "@nestjs/common";
 
-import { ConnectMachineDtoType, GetMachineDtoType } from "./machines.dto";
+import {
+  ConnectMachineDtoType,
+  FindAllMachinesDtoType,
+  GetMachineDtoType,
+} from "./machines.dto";
 
 @Injectable()
 export class MachinesService {
@@ -74,5 +78,27 @@ export class MachinesService {
       username: machine.sshUsername,
       password: sshPassword,
     };
+  }
+
+  async findAll(findAllMachinesDto: FindAllMachinesDtoType) {
+    const { userId } = findAllMachinesDto;
+
+    const userMachines = await this.crudMachinesService.findAllOwnedBy({
+      userId,
+    });
+
+    const returningMachines = userMachines.map(
+      ({
+        workerId,
+        containerId,
+        lastError,
+        sshUsername,
+        sshPassword,
+        sshPort,
+        ...rest
+      }) => rest,
+    );
+
+    return returningMachines;
   }
 }

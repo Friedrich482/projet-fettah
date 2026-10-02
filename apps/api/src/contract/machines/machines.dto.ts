@@ -9,10 +9,16 @@ export const GetMachineDto = GetMachineInputSchema.extend({
   userId: z.ulid(),
 });
 
+export const FindAllMachinesDto = z.object({
+  userId: z.ulid(),
+});
+
 export const ConnectMachineDto = ConnectMachineInputSchema.extend({
   userId: z.ulid(),
 });
 
 export type GetMachineDtoType = z.infer<typeof GetMachineDto>;
+
+export type FindAllMachinesDtoType = z.infer<typeof FindAllMachinesDto>;
 
 export type ConnectMachineDtoType = z.infer<typeof ConnectMachineDto>;
