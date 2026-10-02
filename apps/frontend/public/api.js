@@ -15,6 +15,24 @@ const imageTemplates = [
 // stored only for the current frontend session.
 const machines = [];
 
+async function handleApiError(response, fallbackMessage) {
+    let message = fallbackMessage;
+
+    try {
+        const errorData = await response.json();
+        if (errorData.message) {
+            message = errorData.message;
+        }
+    } catch {
+        // Keep fallback message if response has no JSON body.
+    }
+
+    const error = new Error(message);
+    error.status = response.status;
+
+    throw error;
+}
+
 async function getImages() {
     return imageTemplates;
 }
@@ -34,7 +52,7 @@ async function getReservations() {
     });
 
     if (!response.ok) {
-        throw new Error("Failed to load reservations");
+        await handleApiError(response, "Failed to load reservations");
     }
     
     return response.json();
@@ -57,8 +75,7 @@ async function createReservationRequest(imageName, imageTag, machineCpu, machine
     });
 
     if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Failed to create reservation");
+        await handleApiError(response, "Failed to create reservation");
     }
 
     return response.json();
@@ -73,19 +90,7 @@ async function deleteReservationRequest(id) {
     );
 
     if (!response.ok) {
-        let errorMessage = "Failed to release reservation";
-
-        try {
-            const errorData = await response.json();
-
-            if (errorData.message) {
-                errorMessage = errorData.message;
-            }
-        } catch {
-            // Fallback message if response has no JSON body
-        }
-
-        throw new Error(errorMessage);
+        await handleApiError(response, "Failed to release reservation");
     }
 
     if (response.status === 204) {

@@ -1,5 +1,7 @@
 console.log("Lab Hacker frontend loaded");
 
+let currentSession = null;
+
 function renderImages(images) {
     const container = document.getElementById("available-labs");
     container.innerHTML = "";
@@ -72,6 +74,8 @@ function renderImages(images) {
             }
         });
     });
+
+    updateAuthUI(currentSession);
 }
 
 function renderMachines(machinesToRender) {
@@ -187,6 +191,13 @@ signupForm.addEventListener("submit", async (event) => {
 
     try {
         await signup(name, email, password);
+        const session = await checkSession();
+
+        if (session?.user) {
+            await refreshReservations();
+            startReservationPolling();
+        }
+        
         signupMessage.textContent = "Account created successfully.";
         signupForm.reset();
     } catch (error) {
@@ -211,11 +222,32 @@ logoutButton.addEventListener("click", async () => {
     }
 });
 
+function updateAuthUI(session) {
+    const loginForm = document.getElementById("login-form");
+    const loginTitle = document.getElementById("login-title");
+    const signupForm = document.getElementById("signup-form");
+    const signupTitle = document.getElementById("signup-title");
+    const logoutButton = document.getElementById("logout-button");
+    const reserveButtons = document.querySelectorAll(".create-lab-btn");
+    const isLoggedIn = Boolean(session?.user);
+
+    loginForm.hidden = isLoggedIn;
+    loginTitle.hidden = isLoggedIn;
+    signupForm.hidden = isLoggedIn;
+    signupTitle.hidden = isLoggedIn;
+    logoutButton.hidden = !isLoggedIn;
+
+    reserveButtons.forEach((button) => {
+        button.disabled = !isLoggedIn;
+    });
+}
+
 async function checkSession() {
     const authMessage = document.getElementById("auth-message");
 
     try {
         const session = await getSession();
+        currentSession = session;
 
         if (session?.user) {
             authMessage.textContent = `Logged in as ${session.user.email}`;
@@ -223,10 +255,13 @@ async function checkSession() {
             authMessage.textContent = "Not logged in.";
         }
 
+        updateAuthUI(session);
         return session;
     } catch (error) {
         console.error(error);
         authMessage.textContent = "Failed to check session.";
+        currentSession = null;
+        updateAuthUI(null);
         return null;
     }
 }
@@ -247,6 +282,17 @@ async function refreshReservations() {
         renderReservations(reservations);
     } catch (error) {
         console.error("Failed to refresh reservations: ", error);
+
+        if (error.status === 401 || error.status === 403) {
+            currentSession = null;
+            stopReservationPolling();
+            updateAuthUI(null);
+
+            document.getElementById("auth-message").textContent = "Your session has expired. Please log in again.";
+            userLabsContainer.innerHTML = "<p>Log in to view your reservations.</p>";
+            return;
+        }
+
         userLabsContainer.innerHTML = "<p>Failed to refresh reservations.</p>";
     } finally {
         isRefreshingReservations = false;
