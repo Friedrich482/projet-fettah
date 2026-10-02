@@ -1,9 +1,8 @@
 import z from "zod";
 
-import {
-  MACHINES_STATUSES,
-  RESERVATION_STATUSES,
-} from "@repo/common/constants";
+import { RESERVATION_STATUSES } from "@repo/common/constants";
+
+import { MachineSchema } from "../machines/types-schemas";
 
 export const ReservationSchema = z.object({
   id: z.ulid(),
@@ -12,20 +11,6 @@ export const ReservationSchema = z.object({
   duration: z.int().positive(),
   expiresAt: z.date().nullable(),
   endedAt: z.date().nullable(),
-});
-
-export const MachineSchema = z.object({
-  id: z.ulid(),
-  reservationId: z.ulid(),
-  imageId: z.ulid(),
-  workerId: z.ulid().nullable(),
-  name: z.string().trim().min(1),
-  cpu: z.int().positive(),
-  ram: z.int().positive(),
-  status: z.enum(MACHINES_STATUSES),
-  containerId: z.string().trim().min(1).nullable(),
-  lastError: z.string().trim().min(1).nullable(),
-  destroyedAt: z.date().nullable(),
 });
 
 export const ImageSchema = z.object({
@@ -75,5 +60,8 @@ export const CreateReservationOutputSchema = z.object({
     containerId: true,
     reservationId: true,
     imageId: true,
+    sshUsername: true,
+    sshPassword: true,
+    sshPort: true,
   }),
 });

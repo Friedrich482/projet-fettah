@@ -8,6 +8,7 @@ import { AuthModule } from "@thallesp/nestjs-better-auth";
 import { AppController } from "./app.controller";
 import { AppService } from "./app.service";
 import { auth } from "./auth/utils/auth";
+import { MachinesModule as ContractMachinesModule } from "./contract/machines/machines.module";
 import { ReservationsModule as ContractReservationsModule } from "./contract/reservations/reservations.module";
 import { EnvSchema } from "./env/env";
 import { EnvModule } from "./env/env.module";
@@ -50,6 +51,7 @@ import { WorkersModule } from "./workers/workers.module";
     ReservationsModule,
     MachinesModule,
     ContractReservationsModule,
+    ContractMachinesModule,
   ],
   controllers: [AppController],
   providers: [AppService],

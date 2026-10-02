@@ -1,4 +1,4 @@
-import { eq, SQL } from "drizzle-orm";
+import { and, eq, SQL } from "drizzle-orm";
 import { NodePgDatabase } from "drizzle-orm/node-postgres";
 
 import {
@@ -8,12 +8,13 @@ import {
   NotFoundException,
 } from "@nestjs/common";
 import { db } from "@repo/db/db";
-import { machines } from "@repo/db/schema";
+import { machines, reservations } from "@repo/db/schema";
 
 import {
   CreateMachineDtoType,
   DeleteMachineDtoType,
   FindOneMachineDtoType,
+  FindOneMachineOwnedByUserDtoType,
   UpdateMachineDtoType,
 } from "./machines.dto";
 
@@ -29,6 +30,9 @@ export class MachinesService {
     ram: machines.ram,
     status: machines.status,
     containerId: machines.containerId,
+    sshUsername: machines.sshUsername,
+    sshPassword: machines.sshPassword,
+    sshPort: machines.sshPort,
     lastError: machines.lastError,
     destroyedAt: machines.destroyedAt,
   };
@@ -101,6 +105,25 @@ export class MachinesService {
       .select(this.machinesColumns)
       .from(machines)
       .where(sqlEqualClause)
+      .limit(1);
+
+    if (!machineFound) {
+      return null;
+    }
+
+    return machineFound;
+  }
+
+  async findOneOwnedBy(
+    findOneMachineOwnedByUserDto: FindOneMachineOwnedByUserDtoType,
+  ) {
+    const { userId, machineId } = findOneMachineOwnedByUserDto;
+
+    const [machineFound] = await db
+      .select(this.machinesColumns)
+      .from(machines)
+      .innerJoin(reservations, eq(machines.reservationId, reservations.id))
+      .where(and(eq(machines.id, machineId), eq(reservations.userId, userId)))
       .limit(1);
 
     if (!machineFound) {

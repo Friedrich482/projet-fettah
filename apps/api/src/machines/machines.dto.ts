@@ -1,10 +1,18 @@
 import z from "zod";
 
-import { MachineSchema as MachineDto } from "@repo/orpc-contract/reservations/types-schemas";
+import { MachineSchema as MachineDto } from "@repo/orpc-contract/machines/types-schemas";
 
 export const CreateMachineDto = z.object({
-  ...MachineDto.omit({ id: true, containerId: true }).shape,
-  ...MachineDto.pick({ containerId: true }).exactPartial().shape,
+  ...MachineDto.omit({
+    id: true,
+    containerId: true,
+    sshUsername: true,
+    sshPassword: true,
+    sshPort: true,
+  }).shape,
+  ...MachineDto.pick({
+    containerId: true,
+  }).exactPartial().shape,
 });
 
 export const FindOneMachineDto = z.discriminatedUnion("type", [
@@ -24,6 +32,11 @@ export const FindOneMachineDto = z.discriminatedUnion("type", [
   }),
 ]);
 
+export const FindOneMachineOwnedByUserDto = z.object({
+  userId: z.ulid(),
+  machineId: z.ulid(),
+});
+
 export const UpdateMachineDto = z.object({
   ...MachineDto.pick({ id: true }).shape,
   ...MachineDto.omit({ id: true }).exactPartial().shape,
@@ -34,6 +47,10 @@ export const DeleteMachineDto = MachineDto.pick({ id: true });
 export type CreateMachineDtoType = z.infer<typeof CreateMachineDto>;
 
 export type FindOneMachineDtoType = z.infer<typeof FindOneMachineDto>;
+
+export type FindOneMachineOwnedByUserDtoType = z.infer<
+  typeof FindOneMachineOwnedByUserDto
+>;
 
 export type UpdateMachineDtoType = z.infer<typeof UpdateMachineDto>;
 
