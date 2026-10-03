@@ -28,3 +28,11 @@ export const StartJobSchema = z.object({
 });
 
 export type StartJob = z.infer<typeof StartJobSchema>;
+
+export const StopJobSchema = z.object({
+  machineId: z.ulid(),
+  name: z.string().trim().min(1),
+  containerId: z.string().trim().min(1),
+});
+
+export type StopJob = z.infer<typeof StopJobSchema>;

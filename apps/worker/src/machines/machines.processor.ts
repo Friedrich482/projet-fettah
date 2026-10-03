@@ -7,12 +7,17 @@ import { Injectable, Logger } from "@nestjs/common";
 import {
   MACHINE_ACTIONS_QUEUE,
   START_JOB,
+  STOP_JOB,
 } from "@repo/common/queues/constants";
-import { StartJob } from "@repo/common/queues/types-schemas";
+import { StartJob, StopJob } from "@repo/common/queues/types-schemas";
 import { db } from "@repo/db/db";
 import { machines } from "@repo/db/schema";
 
-import { CompleteStartDtoType, FailMachineDtoType } from "./machines.dto";
+import {
+  CompleteStartDtoType,
+  CompleteStopDtoType,
+  FailMachineDtoType,
+} from "./machines.dto";
 
 @Injectable()
 @Processor(MACHINE_ACTIONS_QUEUE, { concurrency: 1 })
@@ -44,7 +49,7 @@ export class MachinesProcessor extends WorkerHost {
     return machineFound;
   }
 
-  private isLastAttempt(job: Job<StartJob>) {
+  private isLastAttempt(job: Job<StartJob | StopJob>) {
     return job.attemptsMade + 1 >= (job.opts.attempts ?? 1);
   }
 
@@ -56,6 +61,18 @@ export class MachinesProcessor extends WorkerHost {
         lastError: null,
         workerId: null,
         ...(sshPort ? { sshPort } : {}),
+      })
+      .where(eq(machines.id, machineId));
+  }
+
+  private async completeStop({ machineId }: CompleteStopDtoType) {
+    await db
+      .update(machines)
+      .set({
+        status: "stopped",
+        lastError: null,
+        workerId: null,
+        sshPort: null,
       })
       .where(eq(machines.id, machineId));
   }
@@ -117,11 +134,54 @@ export class MachinesProcessor extends WorkerHost {
     }
   }
 
-  async process(job: Job<StartJob>) {
-    if (job.name !== START_JOB) {
+  private async stop(job: Job<StopJob>) {
+    const { machineId, containerId, name } = job.data;
+
+    const machine = await this.findMachine(machineId);
+
+    if (!machine) {
+      throw new Error(`Machine ${machineId} not found`);
+    }
+
+    if (machine.status === "stopped") {
       return;
     }
 
-    await this.start(job);
+    if (machine.status !== "pending") {
+      throw new Error(
+        `The machine ${machineId} cannot be stopped from the ${machine.status} status`,
+      );
+    }
+
+    if (!machine.containerId) {
+      throw new Error(`The machine ${machineId} has no container to stop`);
+    }
+
+    try {
+      await this.dockerService.stopContainer({ containerId });
+
+      await this.completeStop({ machineId });
+
+      this.logger.log(`Stopped the machine ${name}`);
+    } catch (error) {
+      if (this.isLastAttempt(job)) {
+        await this.failMachine({ machineId, error });
+      }
+
+      throw error;
+    }
+  }
+
+  async process(job: Job<StartJob | StopJob>) {
+    if (job.name === START_JOB) {
+      await this.start(job);
+      return;
+    }
+
+    if (job.name === STOP_JOB) {
+      await this.stop(job);
+    }
+
+    return;
   }
 }

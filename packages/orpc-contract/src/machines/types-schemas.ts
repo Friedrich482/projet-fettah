@@ -54,3 +54,9 @@ export const StartMachineInputSchema = MachineSchema.pick({
 });
 
 export const StartMachineOutputSchema = GetMachineOutputSchema;
+
+export const StopMachineInputSchema = MachineSchema.pick({
+  id: true,
+});
+
+export const StopMachineOutputSchema = GetMachineOutputSchema;

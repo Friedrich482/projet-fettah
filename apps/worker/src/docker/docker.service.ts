@@ -8,6 +8,7 @@ import {
   DOCKER_CLIENT,
   EXEC_POLL_INTERVAL_MS,
   EXEC_TIMEOUT_MS,
+  HTTP_NOT_MODIFIED,
   NANOCPUS_PER_MILLICPU,
 } from "./constants";
 import {
@@ -18,6 +19,7 @@ import {
   ProvisionContainerDtoType,
   SetContainerPasswordDtoType,
   StartContainerDtoType,
+  StopContainerDtoType,
 } from "./docker.dto";
 
 @Injectable()
@@ -232,12 +234,32 @@ export class DockerService {
     await container.remove({ force: true, v: true });
   }
 
+  private isAlreadyInState(error: unknown) {
+    if (typeof error !== "object" || error === null) {
+      return false;
+    }
+
+    if (!("statusCode" in error)) {
+      return false;
+    }
+
+    return error.statusCode === HTTP_NOT_MODIFIED;
+  }
+
   async startContainer(startContainerDto: StartContainerDtoType) {
     const { containerId } = startContainerDto;
 
     const container = this.client.getContainer(containerId);
 
-    await container.start();
+    try {
+      await container.start();
+    } catch (error) {
+      if (!this.isAlreadyInState(error)) {
+        throw error;
+      }
+
+      this.logger.log(`The container ${containerId} was already started`);
+    }
 
     const inspection = await container.inspect();
 
@@ -253,5 +275,29 @@ export class DockerService {
       : undefined;
 
     return { hostPort: hostPort ? parseInt(hostPort, 10) : null };
+  }
+
+  async stopContainer(stopContainerDto: StopContainerDtoType) {
+    const { containerId } = stopContainerDto;
+
+    const container = this.client.getContainer(containerId);
+
+    try {
+      await container.stop();
+    } catch (error) {
+      if (!this.isAlreadyInState(error)) {
+        throw error;
+      }
+
+      this.logger.log(`The container ${containerId} was already stopped`);
+    }
+
+    const inspection = await container.inspect();
+
+    if (inspection.State.Running) {
+      throw new Error(
+        `The container ${containerId} is still running after being stopped`,
+      );
+    }
   }
 }

@@ -8,6 +8,8 @@ import {
   GetMachinesOutputSchema,
   StartMachineInputSchema,
   StartMachineOutputSchema,
+  StopMachineInputSchema,
+  StopMachineOutputSchema,
 } from "./types-schemas";
 
 const getMachinesContract = oc
@@ -61,9 +63,23 @@ const startMachineContract = oc
   .input(StartMachineInputSchema)
   .output(StartMachineOutputSchema);
 
+const stopMachineContract = oc
+  .route({
+    method: "POST",
+    path: "/machines/{id}/stop",
+    operationId: "stopMachine",
+    summary: "Stop a machine",
+    description:
+      "This endpoint asks a worker to stop the container of one running machine of a specific user. The machine goes back to pending until a worker has stopped it, so poll the machine endpoint to follow the progress. It conflicts when the machine is already stopped, when a worker is already working on it, or when it is not stoppable",
+    successDescription: "The machine is stopping",
+  })
+  .input(StopMachineInputSchema)
+  .output(StopMachineOutputSchema);
+
 export const contrat = populateContractRouterPaths({
   findAll: getMachinesContract,
   findOne: getMachineContract,
   connect: connectMachineContract,
   start: startMachineContract,
+  stop: stopMachineContract,
 });

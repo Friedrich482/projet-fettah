@@ -12,6 +12,7 @@ import {
   FindAllMachinesDtoType,
   GetMachineDtoType,
   StartMachineDtoType,
+  StopMachineDtoType,
 } from "./machines.dto";
 
 @Injectable()
@@ -189,6 +190,100 @@ export class MachinesService {
       sshPort,
       ...restMachine
     } = startingMachine;
+
+    return restMachine;
+  }
+
+  async stop(stopMachineDto: StopMachineDtoType) {
+    const { id, userId } = stopMachineDto;
+
+    const machine = await this.crudMachinesService.findOneOwnedBy({
+      machineId: id,
+      userId,
+    });
+
+    if (!machine) {
+      throw new NotFoundException("Machine not found");
+    }
+
+    const { containerId } = machine;
+
+    if (!containerId) {
+      throw new ConflictException(
+        "The machine has no container to stop, so it was never provisioned",
+      );
+    }
+
+    if (machine.status === "stopped") {
+      throw new ConflictException("The machine is already stopped");
+    }
+
+    if (machine.status === "pending" || machine.status === "provisioning") {
+      throw new ConflictException(
+        `A worker is already working on this machine, it is ${machine.status}`,
+      );
+    }
+
+    if (machine.status === "paused") {
+      throw new ConflictException(
+        "The machine is paused, resume it before stopping it",
+      );
+    }
+
+    if (machine.status === "failed") {
+      throw new ConflictException(
+        "The machine failed, start it again or destroy it instead of stopping it",
+      );
+    }
+
+    if (machine.status === "destroying" || machine.status === "destroyed") {
+      throw new ConflictException(
+        `The machine cannot be stopped because it is ${machine.status}`,
+      );
+    }
+
+    const stoppingMachine = await this.crudMachinesService.transitionStatus({
+      id,
+      from: ["running"],
+      to: "pending",
+    });
+
+    if (!stoppingMachine) {
+      const currentMachine = await this.crudMachinesService.findOneOwnedBy({
+        machineId: id,
+        userId,
+      });
+
+      throw new ConflictException(
+        `The machine cannot be stopped because it is ${currentMachine?.status ?? "unavailable"}`,
+      );
+    }
+
+    try {
+      await this.queuesService.enqueueStop({
+        machineId: stoppingMachine.id,
+        name: stoppingMachine.name,
+        containerId,
+      });
+    } catch (error) {
+      await this.crudMachinesService.transitionStatus({
+        id,
+        from: ["pending"],
+        to: machine.status,
+      });
+
+      throw error;
+    }
+
+    const {
+      workerId,
+      containerId: stoppingContainerId,
+      lastError,
+      sshUsername,
+      sshPassword,
+      sshPort,
+      ...restMachine
+    } = stoppingMachine;
 
     return restMachine;
   }

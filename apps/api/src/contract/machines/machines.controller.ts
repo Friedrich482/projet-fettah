@@ -46,4 +46,14 @@ export class MachinesController {
       }),
     );
   }
+
+  @Implement(contract.machines.stop)
+  stop(@Session() session: UserSession) {
+    return implement(contract.machines.stop).handler(({ input }) =>
+      this.machinesService.stop({
+        ...input,
+        userId: session.user.id,
+      }),
+    );
+  }
 }

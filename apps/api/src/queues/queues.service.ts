@@ -7,8 +7,13 @@ import {
   PROVISION_JOB,
   PROVISION_QUEUE,
   START_JOB,
+  STOP_JOB,
 } from "@repo/common/queues/constants";
-import { ProvisionJob, StartJob } from "@repo/common/queues/types-schemas";
+import {
+  ProvisionJob,
+  StartJob,
+  StopJob,
+} from "@repo/common/queues/types-schemas";
 
 @Injectable()
 export class QueuesService {
@@ -17,7 +22,7 @@ export class QueuesService {
     private readonly provisionQueue: Queue<ProvisionJob>,
 
     @InjectQueue(MACHINE_ACTIONS_QUEUE)
-    private readonly machineActionsQueue: Queue<StartJob>,
+    private readonly machineActionsQueue: Queue<StartJob | StopJob>,
   ) {}
 
   async enqueueProvision(provisionJob: ProvisionJob) {
@@ -30,6 +35,12 @@ export class QueuesService {
 
   async enqueueStart(startJob: StartJob) {
     const job = await this.machineActionsQueue.add(START_JOB, startJob);
+
+    return job;
+  }
+
+  async enqueueStop(stopJob: StopJob) {
+    const job = await this.machineActionsQueue.add(STOP_JOB, stopJob);
 
     return job;
   }
