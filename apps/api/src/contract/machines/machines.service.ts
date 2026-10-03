@@ -1,5 +1,6 @@
 import { EnvService } from "@/env/env.service";
 import { MachinesService as CrudMachinesService } from "@/machines/machines.service";
+import { QueuesService } from "@/queues/queues.service";
 import {
   ConflictException,
   Injectable,
@@ -10,6 +11,7 @@ import {
   ConnectMachineDtoType,
   FindAllMachinesDtoType,
   GetMachineDtoType,
+  StartMachineDtoType,
 } from "./machines.dto";
 
 @Injectable()
@@ -17,6 +19,7 @@ export class MachinesService {
   constructor(
     private readonly crudMachinesService: CrudMachinesService,
     private readonly envService: EnvService,
+    private readonly queuesService: QueuesService,
   ) {}
 
   async findOne(getMachineDto: GetMachineDtoType) {
@@ -100,5 +103,93 @@ export class MachinesService {
     );
 
     return returningMachines;
+  }
+
+  async start(startMachineDto: StartMachineDtoType) {
+    const { id, userId } = startMachineDto;
+
+    const machine = await this.crudMachinesService.findOneOwnedBy({
+      machineId: id,
+      userId,
+    });
+
+    if (!machine) {
+      throw new NotFoundException("Machine not found");
+    }
+
+    const { containerId } = machine;
+
+    if (!containerId) {
+      throw new ConflictException(
+        "The machine has no container to start, so it was never provisioned",
+      );
+    }
+
+    if (machine.status === "running") {
+      throw new ConflictException("The machine is already running");
+    }
+
+    if (machine.status === "pending" || machine.status === "provisioning") {
+      throw new ConflictException(
+        `A worker is already working on this machine, it is ${machine.status}`,
+      );
+    }
+
+    if (machine.status === "paused") {
+      throw new ConflictException(
+        "The machine is paused, unpause it before starting it",
+      );
+    }
+
+    if (machine.status === "destroying" || machine.status === "destroyed") {
+      throw new ConflictException(
+        `The machine cannot be started because it is ${machine.status}`,
+      );
+    }
+
+    const startingMachine = await this.crudMachinesService.transitionStatus({
+      id,
+      from: ["stopped", "failed"],
+      to: "pending",
+    });
+
+    if (!startingMachine) {
+      const currentMachine = await this.crudMachinesService.findOneOwnedBy({
+        machineId: id,
+        userId,
+      });
+
+      throw new ConflictException(
+        `The machine cannot be started because it is ${currentMachine?.status ?? "unavailable"}`,
+      );
+    }
+
+    try {
+      await this.queuesService.enqueueStart({
+        machineId: startingMachine.id,
+        name: startingMachine.name,
+        containerId,
+      });
+    } catch (error) {
+      await this.crudMachinesService.transitionStatus({
+        id,
+        from: ["pending"],
+        to: machine.status,
+      });
+
+      throw error;
+    }
+
+    const {
+      workerId,
+      containerId: startingContainerId,
+      lastError,
+      sshUsername,
+      sshPassword,
+      sshPort,
+      ...restMachine
+    } = startingMachine;
+
+    return restMachine;
   }
 }

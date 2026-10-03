@@ -6,6 +6,8 @@ import {
   GetMachineInputSchema,
   GetMachineOutputSchema,
   GetMachinesOutputSchema,
+  StartMachineInputSchema,
+  StartMachineOutputSchema,
 } from "./types-schemas";
 
 const getMachinesContract = oc
@@ -46,8 +48,22 @@ const connectMachineContract = oc
   .input(ConnectMachineInputSchema)
   .output(ConnectMachineOutputSchema);
 
+const startMachineContract = oc
+  .route({
+    method: "POST",
+    path: "/machines/{id}/start",
+    operationId: "startMachine",
+    summary: "Start a machine",
+    description:
+      "This endpoint asks a worker to start the container of one stopped machine of a specific user. The machine goes back to pending until a worker has started it, so poll the machine endpoint to follow the progress. It conflicts when the machine is already running, when a worker is already working on it, or when it is not startable",
+    successDescription: "The machine is starting",
+  })
+  .input(StartMachineInputSchema)
+  .output(StartMachineOutputSchema);
+
 export const contrat = populateContractRouterPaths({
   findAll: getMachinesContract,
   findOne: getMachineContract,
   connect: connectMachineContract,
+  start: startMachineContract,
 });

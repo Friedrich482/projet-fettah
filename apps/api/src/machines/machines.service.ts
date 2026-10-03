@@ -1,4 +1,4 @@
-import { and, eq, SQL } from "drizzle-orm";
+import { and, eq, inArray, SQL } from "drizzle-orm";
 import { NodePgDatabase } from "drizzle-orm/node-postgres";
 
 import {
@@ -16,6 +16,7 @@ import {
   FindAllMachinesOwnedByUserDtoType,
   FindOneMachineDtoType,
   FindOneMachineOwnedByUserDtoType,
+  TransitionMachineStatusDtoType,
   UpdateMachineDtoType,
 } from "./machines.dto";
 
@@ -191,6 +192,24 @@ export class MachinesService {
     }
 
     return returningMachine;
+  }
+
+  async transitionStatus(
+    transitionMachineStatusDto: TransitionMachineStatusDtoType,
+  ) {
+    const { id, from, to } = transitionMachineStatusDto;
+
+    const [machine] = await db
+      .update(machines)
+      .set({ status: to })
+      .where(and(eq(machines.id, id), inArray(machines.status, from)))
+      .returning(this.machinesColumns);
+
+    if (!machine) {
+      return null;
+    }
+
+    return machine;
   }
 
   async delete(deleteMachineDto: DeleteMachineDtoType) {

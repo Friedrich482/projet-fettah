@@ -2,7 +2,10 @@ import { EnvModule } from "@/env/env.module";
 import { EnvService } from "@/env/env.service";
 import { BullModule } from "@nestjs/bullmq";
 import { Module } from "@nestjs/common";
-import { PROVISION_QUEUE } from "@repo/common/queues/constants";
+import {
+  MACHINE_ACTIONS_QUEUE,
+  PROVISION_QUEUE,
+} from "@repo/common/queues/constants";
 
 import { QueuesService } from "./queues.service";
 
@@ -21,6 +24,15 @@ import { QueuesService } from "./queues.service";
     }),
     BullModule.registerQueue({
       name: PROVISION_QUEUE,
+      defaultJobOptions: {
+        attempts: 3,
+        backoff: { type: "exponential", delay: 5000 },
+        removeOnComplete: 100,
+        removeOnFail: 500,
+      },
+    }),
+    BullModule.registerQueue({
+      name: MACHINE_ACTIONS_QUEUE,
       defaultJobOptions: {
         attempts: 3,
         backoff: { type: "exponential", delay: 5000 },

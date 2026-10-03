@@ -20,3 +20,11 @@ export const DestroyJobSchema = z.object({
 });
 
 export type DestroyJob = z.infer<typeof DestroyJobSchema>;
+
+export const StartJobSchema = z.object({
+  machineId: z.ulid(),
+  name: z.string().trim().min(1),
+  containerId: z.string().trim().min(1),
+});
+
+export type StartJob = z.infer<typeof StartJobSchema>;

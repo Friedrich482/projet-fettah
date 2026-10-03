@@ -17,6 +17,7 @@ import {
   EnsureNetworkDtoType,
   ProvisionContainerDtoType,
   SetContainerPasswordDtoType,
+  StartContainerDtoType,
 } from "./docker.dto";
 
 @Injectable()
@@ -229,5 +230,28 @@ export class DockerService {
     const container = this.client.getContainer(containerId);
 
     await container.remove({ force: true, v: true });
+  }
+
+  async startContainer(startContainerDto: StartContainerDtoType) {
+    const { containerId } = startContainerDto;
+
+    const container = this.client.getContainer(containerId);
+
+    await container.start();
+
+    const inspection = await container.inspect();
+
+    if (!inspection.State.Running) {
+      throw new Error(
+        `The container ${containerId} is not running after being started`,
+      );
+    }
+
+    const [exposedPort] = Object.keys(inspection.Config.ExposedPorts);
+    const hostPort = exposedPort
+      ? inspection.NetworkSettings.Ports[exposedPort]?.[0]?.HostPort
+      : undefined;
+
+    return { hostPort: hostPort ? parseInt(hostPort, 10) : null };
   }
 }

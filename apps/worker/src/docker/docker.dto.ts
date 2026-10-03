@@ -39,6 +39,10 @@ export const DestroyContainerDto = z.object({
   containerId: z.string().trim().min(1),
 });
 
+export const StartContainerDto = z.object({
+  containerId: z.string().trim().min(1),
+});
+
 export type ImageRefDtoType = z.infer<typeof ImageRefDto>;
 
 export type EnsureNetworkDtoType = z.infer<typeof EnsureNetworkDto>;
@@ -56,3 +60,5 @@ export type SetContainerPasswordDtoType = z.infer<
 >;
 
 export type DestroyContainerDtoType = z.infer<typeof DestroyContainerDto>;
+
+export type StartContainerDtoType = z.infer<typeof StartContainerDto>;

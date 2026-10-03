@@ -48,6 +48,12 @@ export const UpdateMachineDto = z.object({
 
 export const DeleteMachineDto = MachineDto.pick({ id: true });
 
+export const TransitionMachineStatusDto = z.object({
+  ...MachineDto.pick({ id: true }).shape,
+  from: z.array(MachineDto.pick({ status: true }).shape.status).min(1),
+  to: MachineDto.pick({ status: true }).shape.status,
+});
+
 export type CreateMachineDtoType = z.infer<typeof CreateMachineDto>;
 
 export type FindOneMachineDtoType = z.infer<typeof FindOneMachineDto>;
@@ -63,3 +69,7 @@ export type FindAllMachinesOwnedByUserDtoType = z.infer<
 export type UpdateMachineDtoType = z.infer<typeof UpdateMachineDto>;
 
 export type DeleteMachineDtoType = z.infer<typeof DeleteMachineDto>;
+
+export type TransitionMachineStatusDtoType = z.infer<
+  typeof TransitionMachineStatusDto
+>;

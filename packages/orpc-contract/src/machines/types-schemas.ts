@@ -48,3 +48,9 @@ export const ConnectMachineOutputSchema = z.object({
     sshPassword: true,
   }).shape.sshPassword.unwrap(),
 });
+
+export const StartMachineInputSchema = MachineSchema.pick({
+  id: true,
+});
+
+export const StartMachineOutputSchema = GetMachineOutputSchema;
