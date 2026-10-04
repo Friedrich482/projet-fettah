@@ -44,6 +44,36 @@ async function getMachines() {
     return response.json();
 }
 
+async function startMachineRequest(id) {
+    const response = await fetch(`http://localhost:3040/machines/${id}/start`,
+        {
+            method: "POST",
+            credentials: "include"
+        }
+    );
+
+    if (!response.ok) {
+        await handleApiError(response, "Failed to start machine");
+    }
+
+    return response.json();
+}
+
+async function stopMachineRequest(id) {
+    const response = await fetch(`http://localhost:3040/machines/${id}/stop`,
+        {
+            method: "POST",
+            credentials: "include"
+        }
+    );
+
+    if (!response.ok) {
+        await handleApiError(response, "Failed to stop machine");
+    }
+
+    return response.json();
+}
+
 async function getReservations() {
     const response = await fetch("http://localhost:3040/reservations", {
         method: "GET",

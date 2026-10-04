@@ -87,6 +87,12 @@ function renderMachines(machinesToRender) {
     }
 
     machinesToRender.forEach((machine) => {
+        const actionButton = machine.status === "running"
+            ? `<button class="stop-machine-btn" data-machine-id="${machine.id}">Stop</button>`
+                : machine.status === "stopped"
+                    ? `<button class="start-machine-btn" data-machine-id="${machine.id}">Start</button>`
+                        : "";
+
         container.innerHTML += `
             <article class="lab-card">
                 <h3>${machine.name}</h3>
@@ -94,8 +100,49 @@ function renderMachines(machinesToRender) {
                 <p>Status: ${machine.status}</p>
                 <p>CPU: ${machine.cpu}</p>
                 <p>RAM: ${machine.ram} MB</p>
+                ${actionButton}
             </article>
         `;
+    });
+
+    document.querySelectorAll(".start-machine-btn").forEach((button) => {
+        button.addEventListener("click", async () => {
+            const machineId = button.dataset.machineId;
+
+            button.disabled = true;
+            button.textContent = "Starting...";
+
+            try {
+                await startMachineRequest(machineId);
+                await refreshMachines();
+            } catch (error) {
+                console.error(error);
+                alert(error.message);
+
+                button.disabled = false;
+                button.textContent = "Start";
+            }
+        });
+    });
+
+    document.querySelectorAll(".stop-machine-btn").forEach((button) => {
+        button.addEventListener("click", async () => {
+            const machineId = button.dataset.machineId;
+
+            button.disabled = true;
+            button.textContent = "Stopping...";
+
+            try {
+                await stopMachineRequest(machineId);
+                await refreshMachines();
+            } catch (error) {
+                console.error(error);
+                alert(error.message);
+
+                button.disabled = false;
+                button.textContent = "Stop";
+            }
+        });
     });
 }
 
