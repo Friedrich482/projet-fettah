@@ -40,7 +40,7 @@ function renderImages(images) {
                     </select>
                 </label>
 
-                <button class="create-lab-btn" data-image-name="${image.name}" data-image-tag="${image.tag}">Reserve</button>
+                <button class="create-lab-btn primary-btn" data-image-name="${image.name}" data-image-tag="${image.tag}">Reserve</button>
             </article>
         `;
     });
@@ -88,16 +88,21 @@ function renderMachines(machinesToRender) {
 
     machinesToRender.forEach((machine) => {
         const actionButton = machine.status === "running"
-            ? `<button class="stop-machine-btn" data-machine-id="${machine.id}">Stop</button>`
+            ? `<button class="stop-machine-btn danger-btn" data-machine-id="${machine.id}">Stop</button>`
                 : machine.status === "stopped"
-                    ? `<button class="start-machine-btn" data-machine-id="${machine.id}">Start</button>`
+                    ? `<button class="start-machine-btn primary-btn" data-machine-id="${machine.id}">Start</button>`
                         : "";
 
         container.innerHTML += `
             <article class="lab-card">
                 <h3>${machine.name}</h3>
-                <p>Machine ID: ${machine.id}</p>
-                <p>Status: ${machine.status}</p>
+                <p class="meta">Machine ID: ${machine.id}</p>
+                <p>
+                    Status: 
+                    <span class="status-badge status-${machine.status}">
+                    ${machine.status}
+                    </span>
+                </p>
                 <p>CPU: ${machine.cpu}</p>
                 <p>RAM: ${machine.ram} MB</p>
                 ${actionButton}
@@ -168,12 +173,17 @@ function renderReservations(reservationsToRender) {
         container.innerHTML += `
             <article class="lab-card">
                 <h3>Reservation</h3>
-                <p>Reservation ID: ${reservation.id}</p>
-                <p>Status: ${reservation.status}</p>
+                <p class="meta">Reservation ID: ${reservation.id}</p>
+                <p>
+                    Status: 
+                        <span class="status-badge status-${reservation.status}">
+                            ${reservation.status}
+                        </span>
+                </p>
                 <p>Duration: ${reservation.duration} minutes</p>
                 <p>Expires at: ${expiresAt}</p>
                 <p>Ended at: ${endedAt}</p>
-                <button class="release-reservation-btn" data-reservation-id="${reservation.id}">Release</button>
+                <button class="release-reservation-btn danger-btn" data-reservation-id="${reservation.id}">Release</button>
             </article>
         `;
     });

@@ -1,25 +1,242 @@
+* {
+    box-sizing: border-box;
+}
+
 body {
+    margin: 0;
     font-family: Arial, sans-serif;
-    margin: 40px;
-    background-color: #f5f5f5;
+    background-color: #0f1115;
+    color: #e8e8e8;
+}
+
+header {
+    background-color: #161a20;
+    border-bottom: 1px solid #2a3038;
+    padding: 24px 40px;
+}
+
+header h1 {
+    margin: 0;
+    font-size: 2rem;
+}
+
+main,
+#auth-section {
+    width: min(1100px, calc(100% - 40px));
+    margin: 0 auto;
+}
+
+#auth-section {
+    margin-top: 32px;
+    padding: 24px;
+    background-color: #161a20;
+    border: 1px solid #2a3038;
+    border-radius: 12px;
 }
 
 main {
-    max-width: 900px;
+    padding: 32px 0;
 }
 
 section {
     margin-bottom: 40px;
 }
 
-.lab-card {
-    background-color: white;
-    border: 1px solid #ccc;
-    padding: 20px;
-    margin-bottom: 15px;
+h2 {
+    margin-top: 0;
+    margin-bottom: 18px;
+    font-size: 1.4rem;
+}
+
+form {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px;
+    align-items: end;
+}
+
+label {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    font-size: 0.9rem;
+    color: #b8c0cc;
+}
+
+input,
+select {
+    background-color: #0f1115;
+    color: #e8e8e8;
+    border: 1px solid #343b46;
+    border-radius: 7px;
+    padding: 9px 10px;
+    min-width: 180px;
+}
+
+input:focus,
+select:focus {
+    outline: none;
+    border-color: #5b8cff;
 }
 
 button {
-    padding: 8px 14px;
+    border: 1px solid #3c4655;
+    background-color: #20262f;
+    color: #f2f2f2;
+    border-radius: 7px;
+    padding: 9px 15px;
     cursor: pointer;
+    transition: background-color 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
+}
+
+button:hover:not(:disabled) {
+    background-color: #2a3340;
+    border-color: #536174;
+}
+
+button:active:not(:disabled) {
+    transform: translateY(1px);
+}
+
+button:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+#available-labs,
+#user-labs,
+#machine-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 16px;
+}
+
+.lab-card {
+    background-color: #161a20;
+    border: 1px solid #2a3038;
+    border-radius: 12px;
+    padding: 20px;
+    margin: 0;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.18);
+}
+
+.lab-card h3 {
+    margin-top: 0;
+    margin-bottom: 14px;
+    font-size: 1.1rem;
+}
+
+.lab-card p {
+    margin: 8px 0;
+    color: #c9d0da;
+    line-height: 1.4;
+}
+
+.lab-card label {
+    margin-top: 12px;
+}
+
+.lab-card button {
+    margin-top: 14px;
+}
+
+#auth-message,
+#signup-message {
+    color: #aab4c2;
+    margin-top: 14px;
+}
+
+#logout-button {
+    margin-top: 8px;
+}
+
+@media (max-width: 700px) {
+    header {
+        padding: 20px;
+    }
+
+    main,
+    #auth-section {
+        width: min(100% - 24px, 1100px);
+    }
+
+    form {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    input,
+    select {
+        width: 100%;
+    }
+
+    button {
+        width: 100%;
+    }
+}
+
+.status-badge {
+    display: inline-block;
+    padding: 4px 9px;
+    border-radius: 999px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    text-transform: capitalize;
+    border: 1px solid #3c4655;
+    background-color: #20262f;
+    color: #d7dde6;
+}
+
+.status-pending {
+    background-color: #332b17;
+    border-color: #5f5127;
+    color: #e7c75d;
+}
+
+.status-running {
+    background-color: #173020;
+    border-color: #2f6943;
+    color: #7fd899;
+}
+
+.status-stopped {
+    background-color: #292d34;
+    border-color: #4a525f;
+    color: #c2c8d0;
+}
+
+.status-failed,
+.status-destroyed {
+    background-color: #351b1b;
+    border-color: #6a3434;
+    color: #e58a8a;
+}
+
+.meta {
+    color: #8994a3;
+    font-size: 0.85rem;
+    font-family: monospace;
+    overflow-wrap: anywhere;
+}
+
+.danger-btn {
+    border-color: #673838;
+    background-color: #321c1c;
+    color: #f0b0b0;
+}
+
+.danger-btn:hover:not(:disabled) {
+    background-color: #442424;
+    border-color: #8a4747;
+}
+
+.primary-btn {
+    background-color: #234d8c;
+    border-color: #3466ad;
+    color: white;
+}
+
+.primary-btn:hover:not(:disabled) {
+    background-color: #2b5da8;
+    border-color: #4678bd;
 }
