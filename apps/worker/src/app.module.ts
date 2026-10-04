@@ -1,5 +1,6 @@
 import { Module } from "@nestjs/common";
 import { ConfigModule } from "@nestjs/config";
+import { ScheduleModule } from "@nestjs/schedule";
 
 import { DockerModule } from "./docker/docker.module";
 import { EnvSchema } from "./env/env";
@@ -15,6 +16,7 @@ import { WorkersModule } from "./workers/workers.module";
       isGlobal: true,
       validate: (env) => EnvSchema.parse(env),
     }),
+    ScheduleModule.forRoot(),
     EnvModule,
     DockerModule,
     WorkersModule,
