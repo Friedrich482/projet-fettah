@@ -1,4 +1,4 @@
-import { and, eq } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import { NodePgDatabase } from "drizzle-orm/node-postgres";
 
 import {
@@ -15,6 +15,7 @@ import {
   DeleteReservationDtoType,
   FindAllReservationsDtoType,
   FindOneReservationDtoType,
+  TransitionReservationStatusDtoType,
   UpdateReservationDtoType,
 } from "./reservations.dto";
 
@@ -95,6 +96,25 @@ export class ReservationsService {
     }
 
     return returningReservation;
+  }
+
+  async transitionStatus(
+    transitionReservationStatusDto: TransitionReservationStatusDtoType,
+    executor: NodePgDatabase = db,
+  ) {
+    const { id, from, to, endedAt } = transitionReservationStatusDto;
+
+    const [reservation] = await executor
+      .update(reservations)
+      .set({ status: to, endedAt })
+      .where(and(eq(reservations.id, id), inArray(reservations.status, from)))
+      .returning(this.reservationsColumns);
+
+    if (!reservation) {
+      return null;
+    }
+
+    return reservation;
   }
 
   async delete(deleteReservationDto: DeleteReservationDtoType) {

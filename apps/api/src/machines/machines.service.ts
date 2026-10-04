@@ -166,6 +166,15 @@ export class MachinesService {
       return machine;
     }
 
+    if (type === "reservationId") {
+      const { reservationId } = findOneMachineDto;
+      const machine = await this.retrieveMachine(
+        eq(machines.reservationId, reservationId),
+      );
+
+      return machine;
+    }
+
     const { containerId } = findOneMachineDto;
     const machine = await this.retrieveMachine(
       eq(machines.containerId, containerId),
@@ -196,10 +205,11 @@ export class MachinesService {
 
   async transitionStatus(
     transitionMachineStatusDto: TransitionMachineStatusDtoType,
+    executor: NodePgDatabase = db,
   ) {
     const { id, from, to } = transitionMachineStatusDto;
 
-    const [machine] = await db
+    const [machine] = await executor
       .update(machines)
       .set({ status: to })
       .where(and(eq(machines.id, id), inArray(machines.status, from)))

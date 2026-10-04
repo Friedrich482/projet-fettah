@@ -3,7 +3,10 @@ import z from "zod";
 import { RESERVATION_STATUSES } from "@repo/common/constants";
 
 import { ImageSchema } from "../images/types-schemas";
-import { MachineSchema } from "../machines/types-schemas";
+import {
+  GetMachineOutputSchema,
+  MachineSchema,
+} from "../machines/types-schemas";
 
 export const ReservationSchema = z.object({
   id: z.ulid(),
@@ -47,4 +50,13 @@ export const CreateReservationOutputSchema = z.object({
     sshPassword: true,
     sshPort: true,
   }),
+});
+
+export const DestroyUserReservationInputSchema = ReservationSchema.pick({
+  id: true,
+});
+
+export const DestroyUserReservationOutputSchema = z.object({
+  reservation: ReservationSchema.omit({ userId: true }),
+  machine: GetMachineOutputSchema,
 });

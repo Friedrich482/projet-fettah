@@ -8,6 +8,7 @@ import {
   DOCKER_CLIENT,
   EXEC_POLL_INTERVAL_MS,
   EXEC_TIMEOUT_MS,
+  HTTP_NOT_FOUND,
   HTTP_NOT_MODIFIED,
   NANOCPUS_PER_MILLICPU,
 } from "./constants";
@@ -226,15 +227,7 @@ export class DockerService {
     }
   }
 
-  async destroyContainer(destroyContainerDto: DestroyContainerDtoType) {
-    const { containerId } = destroyContainerDto;
-
-    const container = this.client.getContainer(containerId);
-
-    await container.remove({ force: true, v: true });
-  }
-
-  private isAlreadyInState(error: unknown) {
+  private hasStatusCode(error: unknown, statusCode: number) {
     if (typeof error !== "object" || error === null) {
       return false;
     }
@@ -243,7 +236,31 @@ export class DockerService {
       return false;
     }
 
-    return error.statusCode === HTTP_NOT_MODIFIED;
+    return error.statusCode === statusCode;
+  }
+
+  private isAlreadyInState(error: unknown) {
+    return this.hasStatusCode(error, HTTP_NOT_MODIFIED);
+  }
+
+  async destroyContainer(destroyContainerDto: DestroyContainerDtoType) {
+    const { containerId, name } = destroyContainerDto;
+
+    // A machine that failed mid-provision has no container id recorded, but it
+    // can still own an orphaned container, so fall back to the name.
+    const container = this.client.getContainer(containerId ?? name);
+
+    try {
+      await container.remove({ force: true, v: true });
+    } catch (error) {
+      if (this.hasStatusCode(error, HTTP_NOT_FOUND)) {
+        this.logger.log(`The container ${containerId ?? name} is already gone`);
+
+        return;
+      }
+
+      throw error;
+    }
   }
 
   async startContainer(startContainerDto: StartContainerDtoType) {

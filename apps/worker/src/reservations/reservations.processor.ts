@@ -151,6 +151,18 @@ export class ReservationsProcessor extends WorkerHost {
       return;
     }
 
+    const isProvisionable =
+      machine.status === "pending" ||
+      (machine.status === "failed" && !machine.containerId);
+
+    if (!isProvisionable) {
+      this.logger.log(
+        `Skipping the provisioning of the machine ${name} because it is ${machine.status}`,
+      );
+
+      return;
+    }
+
     const image = await this.findImage(imageId);
 
     if (!image) {

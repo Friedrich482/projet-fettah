@@ -36,7 +36,8 @@ export const SetContainerPasswordDto = z.object({
 });
 
 export const DestroyContainerDto = z.object({
-  containerId: z.string().trim().min(1),
+  containerId: z.string().trim().min(1).nullable(),
+  name: z.string().trim().min(1),
 });
 
 export const StartContainerDto = z.object({

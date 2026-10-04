@@ -30,6 +30,12 @@ export const FindOneMachineDto = z.discriminatedUnion("type", [
       containerId: true,
     }).shape.containerId.unwrap(),
   }),
+  z.object({
+    type: z.literal("reservationId"),
+    reservationId: MachineDto.pick({
+      reservationId: true,
+    }).shape.reservationId,
+  }),
 ]);
 
 export const FindOneMachineOwnedByUserDto = z.object({

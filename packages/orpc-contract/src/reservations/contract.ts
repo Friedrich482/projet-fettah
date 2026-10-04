@@ -3,6 +3,8 @@ import { oc, populateContractRouterPaths } from "@orpc/contract";
 import {
   CreateReservationInputSchema,
   CreateReservationOutputSchema,
+  DestroyUserReservationInputSchema,
+  DestroyUserReservationOutputSchema,
   GetUserReservationInputSchema,
   GetUserReservationOutputSchema,
   GetUserReservationsOutputSchema,
@@ -44,8 +46,23 @@ const getUserReservationContract = oc
   .input(GetUserReservationInputSchema)
   .output(GetUserReservationOutputSchema);
 
+const destroyUserReservationContract = oc
+  .route({
+    method: "DELETE",
+    path: "/reservations/{id}",
+    operationId: "destroyReservation",
+    summary: "Destroy a user reservation",
+    description:
+      "This endpoint destroys one reservation of a specific user along with the machine it provisioned. The reservation and the machine are kept as cancelled and destroyed once the container is removed",
+    successDescription:
+      "The reservation is cancelled and its machine is destroying",
+  })
+  .input(DestroyUserReservationInputSchema)
+  .output(DestroyUserReservationOutputSchema);
+
 export const contrat = populateContractRouterPaths({
   create: createReservationContract,
   findAll: getUserReservationsContract,
   findOne: getUserReservationContract,
+  destroy: destroyUserReservationContract,
 });

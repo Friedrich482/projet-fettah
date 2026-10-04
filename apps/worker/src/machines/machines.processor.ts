@@ -1,21 +1,28 @@
 import { Job } from "bullmq";
-import { eq } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
 
 import { DockerService } from "@/docker/docker.service";
 import { Processor, WorkerHost } from "@nestjs/bullmq";
 import { Injectable, Logger } from "@nestjs/common";
 import {
+  DESTROY_JOB,
   MACHINE_ACTIONS_QUEUE,
   START_JOB,
   STOP_JOB,
 } from "@repo/common/queues/constants";
-import { StartJob, StopJob } from "@repo/common/queues/types-schemas";
+import {
+  DestroyJob,
+  StartJob,
+  StopJob,
+} from "@repo/common/queues/types-schemas";
 import { db } from "@repo/db/db";
-import { machines } from "@repo/db/schema";
+import { machines, reservations } from "@repo/db/schema";
 
 import {
+  CompleteDestroyDtoType,
   CompleteStartDtoType,
   CompleteStopDtoType,
+  FailDestroyDtoType,
   FailMachineDtoType,
 } from "./machines.dto";
 
@@ -34,6 +41,7 @@ export class MachinesProcessor extends WorkerHost {
     const [machineFound] = await db
       .select({
         id: machines.id,
+        reservationId: machines.reservationId,
         status: machines.status,
         containerId: machines.containerId,
         sshPort: machines.sshPort,
@@ -49,8 +57,14 @@ export class MachinesProcessor extends WorkerHost {
     return machineFound;
   }
 
-  private isLastAttempt(job: Job<StartJob | StopJob>) {
+  private isLastAttempt(job: Job<StartJob | StopJob | DestroyJob>) {
     return job.attemptsMade + 1 >= (job.opts.attempts ?? 1);
+  }
+
+  private sanitizeError(error: unknown) {
+    const rawMessage = error instanceof Error ? error.message : String(error);
+
+    return rawMessage.replace(/[^\x20-\x7E]/g, " ").trim();
   }
 
   private async completeStart({ machineId, sshPort }: CompleteStartDtoType) {
@@ -62,7 +76,7 @@ export class MachinesProcessor extends WorkerHost {
         workerId: null,
         ...(sshPort ? { sshPort } : {}),
       })
-      .where(eq(machines.id, machineId));
+      .where(and(eq(machines.id, machineId), eq(machines.status, "pending")));
   }
 
   private async completeStop({ machineId }: CompleteStopDtoType) {
@@ -74,12 +88,40 @@ export class MachinesProcessor extends WorkerHost {
         workerId: null,
         sshPort: null,
       })
-      .where(eq(machines.id, machineId));
+      .where(and(eq(machines.id, machineId), eq(machines.status, "pending")));
+  }
+
+  private async completeDestroy({
+    machineId,
+    reservationId,
+  }: CompleteDestroyDtoType) {
+    const destroyedAt = new Date();
+
+    await db.transaction(async (tx) => {
+      await tx
+        .update(machines)
+        .set({
+          status: "destroyed",
+          destroyedAt,
+          containerId: null,
+          sshPort: null,
+          sshPassword: null,
+          workerId: null,
+          lastError: null,
+        })
+        .where(eq(machines.id, machineId));
+
+      await tx
+        .update(reservations)
+        .set({ endedAt: destroyedAt })
+        .where(
+          and(eq(reservations.id, reservationId), isNull(reservations.endedAt)),
+        );
+    });
   }
 
   private async failMachine({ machineId, error }: FailMachineDtoType) {
-    const rawMessage = error instanceof Error ? error.message : String(error);
-    const lastError = rawMessage.replace(/[^\x20-\x7E]/g, " ").trim();
+    const lastError = this.sanitizeError(error);
 
     try {
       await db
@@ -91,7 +133,37 @@ export class MachinesProcessor extends WorkerHost {
     }
   }
 
-  private async start(job: Job<StartJob>) {
+  private async failDestroy({
+    machineId,
+    reservationId,
+    reservationStatus,
+    error,
+  }: FailDestroyDtoType) {
+    const lastError = this.sanitizeError(error);
+
+    try {
+      await db.transaction(async (tx) => {
+        await tx
+          .update(machines)
+          .set({ status: "failed", lastError, workerId: null })
+          .where(eq(machines.id, machineId));
+
+        await tx
+          .update(reservations)
+          .set({ status: reservationStatus })
+          .where(
+            and(
+              eq(reservations.id, reservationId),
+              eq(reservations.status, "cancelled"),
+            ),
+          );
+      });
+    } catch (databaseError) {
+      this.logger.error("Failed to record the destroy failure", databaseError);
+    }
+  }
+
+  private async start(job: Job<StartJob | StopJob | DestroyJob>) {
     const { machineId, containerId, name } = job.data;
 
     const machine = await this.findMachine(machineId);
@@ -104,13 +176,17 @@ export class MachinesProcessor extends WorkerHost {
       return;
     }
 
+    if (machine.status === "destroying" || machine.status === "destroyed") {
+      return;
+    }
+
     if (machine.status !== "pending") {
       throw new Error(
         `The machine ${machineId} cannot be started from the ${machine.status} status`,
       );
     }
 
-    if (!machine.containerId) {
+    if (!containerId) {
       throw new Error(`The machine ${machineId} has no container to start`);
     }
 
@@ -134,7 +210,7 @@ export class MachinesProcessor extends WorkerHost {
     }
   }
 
-  private async stop(job: Job<StopJob>) {
+  private async stop(job: Job<StartJob | StopJob | DestroyJob>) {
     const { machineId, containerId, name } = job.data;
 
     const machine = await this.findMachine(machineId);
@@ -147,13 +223,17 @@ export class MachinesProcessor extends WorkerHost {
       return;
     }
 
+    if (machine.status === "destroying" || machine.status === "destroyed") {
+      return;
+    }
+
     if (machine.status !== "pending") {
       throw new Error(
         `The machine ${machineId} cannot be stopped from the ${machine.status} status`,
       );
     }
 
-    if (!machine.containerId) {
+    if (!containerId) {
       throw new Error(`The machine ${machineId} has no container to stop`);
     }
 
@@ -172,7 +252,54 @@ export class MachinesProcessor extends WorkerHost {
     }
   }
 
-  async process(job: Job<StartJob | StopJob>) {
+  private async destroy(job: Job<StartJob | StopJob | DestroyJob>) {
+    const { machineId, containerId, name } = job.data;
+
+    const reservationStatus =
+      "reservationStatus" in job.data ? job.data.reservationStatus : "active";
+
+    const machine = await this.findMachine(machineId);
+
+    if (!machine) {
+      return;
+    }
+
+    if (machine.status === "destroyed") {
+      return;
+    }
+
+    if (machine.status !== "destroying") {
+      this.logger.log(
+        `Skipping the destroy of the machine ${name} because it is ${machine.status}`,
+      );
+
+      return;
+    }
+
+    try {
+      await this.dockerService.destroyContainer({ containerId, name });
+
+      await this.completeDestroy({
+        machineId,
+        reservationId: machine.reservationId,
+      });
+
+      this.logger.log(`Destroyed the machine ${name}`);
+    } catch (error) {
+      if (this.isLastAttempt(job)) {
+        await this.failDestroy({
+          machineId,
+          reservationId: machine.reservationId,
+          reservationStatus,
+          error,
+        });
+      }
+
+      throw error;
+    }
+  }
+
+  async process(job: Job<StartJob | StopJob | DestroyJob>) {
     if (job.name === START_JOB) {
       await this.start(job);
       return;
@@ -180,6 +307,11 @@ export class MachinesProcessor extends WorkerHost {
 
     if (job.name === STOP_JOB) {
       await this.stop(job);
+      return;
+    }
+
+    if (job.name === DESTROY_JOB) {
+      await this.destroy(job);
     }
 
     return;
