@@ -1,0 +1,1 @@
+export const WORKER_HEARTBEAT_INTERVAL_MS = 10_000;

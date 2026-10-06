@@ -1,6 +1,7 @@
 import { Module } from "@nestjs/common";
 import { ConfigModule } from "@nestjs/config";
 import { REQUEST } from "@nestjs/core";
+import { ScheduleModule } from "@nestjs/schedule";
 import { ORPCError, ORPCModule } from "@orpc/nest";
 import { experimental_RethrowHandlerPlugin as RethrowHandlerPlugin } from "@orpc/server/plugins";
 import { AuthModule } from "@thallesp/nestjs-better-auth";
@@ -8,12 +9,15 @@ import { AuthModule } from "@thallesp/nestjs-better-auth";
 import { AppController } from "./app.controller";
 import { AppService } from "./app.service";
 import { auth } from "./auth/utils/auth";
+import { ImagesModule as ContractImagesModule } from "./contract/images/images.module";
+import { MachinesModule as ContractMachinesModule } from "./contract/machines/machines.module";
 import { ReservationsModule as ContractReservationsModule } from "./contract/reservations/reservations.module";
 import { EnvSchema } from "./env/env";
 import { EnvModule } from "./env/env.module";
 import { ImagesModule } from "./images/images.module";
 import { MachinesModule } from "./machines/machines.module";
 import { ReservationsModule } from "./reservations/reservations.module";
+import { SchedulerModule } from "./scheduler/scheduler.module";
 import { WorkersModule } from "./workers/workers.module";
 
 @Module({
@@ -44,12 +48,16 @@ import { WorkersModule } from "./workers/workers.module";
       }),
       inject: [REQUEST],
     }),
+    ScheduleModule.forRoot(),
     EnvModule,
     ImagesModule,
     WorkersModule,
     ReservationsModule,
     MachinesModule,
     ContractReservationsModule,
+    ContractMachinesModule,
+    ContractImagesModule,
+    SchedulerModule,
   ],
   controllers: [AppController],
   providers: [AppService],

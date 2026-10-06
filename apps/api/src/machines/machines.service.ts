@@ -1,4 +1,4 @@
-import { eq, SQL } from "drizzle-orm";
+import { and, eq, inArray, SQL } from "drizzle-orm";
 import { NodePgDatabase } from "drizzle-orm/node-postgres";
 
 import {
@@ -8,12 +8,15 @@ import {
   NotFoundException,
 } from "@nestjs/common";
 import { db } from "@repo/db/db";
-import { machines } from "@repo/db/schema";
+import { machines, reservations } from "@repo/db/schema";
 
 import {
   CreateMachineDtoType,
   DeleteMachineDtoType,
+  FindAllMachinesOwnedByUserDtoType,
   FindOneMachineDtoType,
+  FindOneMachineOwnedByUserDtoType,
+  TransitionMachineStatusDtoType,
   UpdateMachineDtoType,
 } from "./machines.dto";
 
@@ -29,6 +32,9 @@ export class MachinesService {
     ram: machines.ram,
     status: machines.status,
     containerId: machines.containerId,
+    sshUsername: machines.sshUsername,
+    sshPassword: machines.sshPassword,
+    sshPort: machines.sshPort,
     lastError: machines.lastError,
     destroyedAt: machines.destroyedAt,
   };
@@ -110,6 +116,39 @@ export class MachinesService {
     return machineFound;
   }
 
+  async findOneOwnedBy(
+    findOneMachineOwnedByUserDto: FindOneMachineOwnedByUserDtoType,
+  ) {
+    const { userId, machineId } = findOneMachineOwnedByUserDto;
+
+    const [machineFound] = await db
+      .select(this.machinesColumns)
+      .from(machines)
+      .innerJoin(reservations, eq(machines.reservationId, reservations.id))
+      .where(and(eq(machines.id, machineId), eq(reservations.userId, userId)))
+      .limit(1);
+
+    if (!machineFound) {
+      return null;
+    }
+
+    return machineFound;
+  }
+
+  async findAllOwnedBy(
+    findAllMachinesOwnedByUserDto: FindAllMachinesOwnedByUserDtoType,
+  ) {
+    const { userId } = findAllMachinesOwnedByUserDto;
+
+    const userMachines = await db
+      .select(this.machinesColumns)
+      .from(machines)
+      .innerJoin(reservations, eq(machines.reservationId, reservations.id))
+      .where(eq(reservations.userId, userId));
+
+    return userMachines;
+  }
+
   async findOne(findOneMachineDto: FindOneMachineDtoType) {
     const { type } = findOneMachineDto;
 
@@ -123,6 +162,15 @@ export class MachinesService {
     if (type === "name") {
       const { name } = findOneMachineDto;
       const machine = await this.retrieveMachine(eq(machines.name, name));
+
+      return machine;
+    }
+
+    if (type === "reservationId") {
+      const { reservationId } = findOneMachineDto;
+      const machine = await this.retrieveMachine(
+        eq(machines.reservationId, reservationId),
+      );
 
       return machine;
     }
@@ -153,6 +201,25 @@ export class MachinesService {
     }
 
     return returningMachine;
+  }
+
+  async transitionStatus(
+    transitionMachineStatusDto: TransitionMachineStatusDtoType,
+    executor: NodePgDatabase = db,
+  ) {
+    const { id, from, to } = transitionMachineStatusDto;
+
+    const [machine] = await executor
+      .update(machines)
+      .set({ status: to })
+      .where(and(eq(machines.id, id), inArray(machines.status, from)))
+      .returning(this.machinesColumns);
+
+    if (!machine) {
+      return null;
+    }
+
+    return machine;
   }
 
   async delete(deleteMachineDto: DeleteMachineDtoType) {

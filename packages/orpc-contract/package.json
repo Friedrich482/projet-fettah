@@ -31,14 +31,14 @@
     }
   },
   "devDependencies": {
-    "prettier": "^3.8.3",
-    "typescript": "^5.9.3",
+    "@repo/eslint-config": "workspace:*",
     "eslint": "^9.39.2",
-    "@repo/eslint-config": "workspace:*"
+    "prettier": "^3.8.3",
+    "typescript": "^5.9.3"
   },
   "dependencies": {
     "@orpc/contract": "^1.15.4",
     "@repo/common": "workspace:*",
-    "zod": "4.5.2"
+    "zod": "^4.6.5"
   }
 }

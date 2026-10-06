@@ -36,4 +36,14 @@ export class ReservationsController {
       this.reservationsService.findAll({ userId: session.user.id }),
     );
   }
+
+  @Implement(contract.reservations.destroy)
+  destroy(@Session() session: UserSession) {
+    return implement(contract.reservations.destroy).handler(({ input }) =>
+      this.reservationsService.destroy({
+        ...input,
+        userId: session.user.id,
+      }),
+    );
+  }
 }

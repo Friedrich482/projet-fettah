@@ -1,9 +1,12 @@
 import z from "zod";
 
+import { RESERVATION_STATUSES } from "@repo/common/constants";
+
+import { ImageSchema } from "../images/types-schemas";
 import {
-  MACHINES_STATUSES,
-  RESERVATION_STATUSES,
-} from "@repo/common/constants";
+  GetMachineOutputSchema,
+  MachineSchema,
+} from "../machines/types-schemas";
 
 export const ReservationSchema = z.object({
   id: z.ulid(),
@@ -12,38 +15,6 @@ export const ReservationSchema = z.object({
   duration: z.int().positive(),
   expiresAt: z.date().nullable(),
   endedAt: z.date().nullable(),
-});
-
-export const MachineSchema = z.object({
-  id: z.ulid(),
-  reservationId: z.ulid(),
-  imageId: z.ulid(),
-  workerId: z.ulid().nullable(),
-  name: z.string().trim().min(1),
-  cpu: z.int().positive(),
-  ram: z.int().positive(),
-  status: z.enum(MACHINES_STATUSES),
-  containerId: z.string().trim().min(1).nullable(),
-  lastError: z.string().trim().min(1).nullable(),
-  destroyedAt: z.date().nullable(),
-});
-
-export const ImageSchema = z.object({
-  id: z.ulid(),
-  name: z
-    .string()
-    .max(255)
-    .regex(
-      /^(?:(?:(?:[a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9-]*[a-zA-Z0-9])(?:\.(?:[a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9-]*[a-zA-Z0-9]))*|\[(?:[a-fA-F0-9:]+)\])(?::[0-9]+)?\/)?[a-z0-9]+(?:(?:[._]|__|[-]+)[a-z0-9]+)*(?:\/[a-z0-9]+(?:(?:[._]|__|[-]+)[a-z0-9]+)*)*$/,
-      { error: "The image name must be a valid Docker image name" },
-    ),
-  tag: z.string().regex(/^[A-Za-z0-9_][A-Za-z0-9_.-]{0,127}$/, {
-    error: "The image tag must be a valid Docker tag",
-  }),
-  digest: z.hash("sha256"),
-  exposedPort: z.int().min(1024).max(65535),
-  defaultCpu: z.int().positive(),
-  defaultRam: z.int().positive(),
 });
 
 export const GetUserReservationsOutputSchema = z.array(
@@ -75,5 +46,17 @@ export const CreateReservationOutputSchema = z.object({
     containerId: true,
     reservationId: true,
     imageId: true,
+    sshUsername: true,
+    sshPassword: true,
+    sshPort: true,
   }),
+});
+
+export const DestroyUserReservationInputSchema = ReservationSchema.pick({
+  id: true,
+});
+
+export const DestroyUserReservationOutputSchema = z.object({
+  reservation: ReservationSchema.omit({ userId: true }),
+  machine: GetMachineOutputSchema,
 });

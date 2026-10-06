@@ -6,13 +6,16 @@ import { QueuesService } from "@/queues/queues.service";
 import { ReservationsService as CrudReservationsService } from "@/reservations/reservations.service";
 import {
   BadRequestException,
+  ConflictException,
   Injectable,
   NotFoundException,
 } from "@nestjs/common";
 import { db } from "@repo/db/db";
 
+import { DESTROYABLE_STATUSES } from "./constants";
 import {
   CreateReservationDtoType,
+  DestroyReservationDtoType,
   FindAllReservationsDtoType,
   FindOneReservationDtoType,
 } from "./reservations.dto";
@@ -133,5 +136,127 @@ export class ReservationsService {
     });
 
     return userReservations;
+  }
+
+  async destroy(destroyReservationDto: DestroyReservationDtoType) {
+    const { id, userId } = destroyReservationDto;
+
+    const reservation = await this.crudReservationsService.findOne({
+      id,
+      userId,
+    });
+
+    if (!reservation) {
+      throw new NotFoundException("Reservation not found");
+    }
+
+    const machine = await this.crudMachinesService.findOne({
+      type: "reservationId",
+      reservationId: id,
+    });
+
+    if (!machine) {
+      throw new NotFoundException("Reservation not found");
+    }
+
+    if (!DESTROYABLE_STATUSES.includes(machine.status)) {
+      if (machine.status === "destroyed") {
+        throw new ConflictException("The reservation is already destroyed");
+      }
+
+      if (machine.status === "destroying") {
+        throw new ConflictException(
+          "The reservation is already being destroyed",
+        );
+      }
+
+      throw new ConflictException(
+        `A worker is already working on this machine, it is ${machine.status}`,
+      );
+    }
+
+    const { machine: destroyingMachine, reservation: cancelledReservation } =
+      await db.transaction(async (tx) => {
+        const claimedMachine = await this.crudMachinesService.transitionStatus(
+          {
+            id: machine.id,
+            from: DESTROYABLE_STATUSES,
+            to: "destroying",
+          },
+          tx,
+        );
+
+        if (!claimedMachine) {
+          throw new ConflictException(
+            "The reservation cannot be destroyed because the machine changed state",
+          );
+        }
+
+        const cancelled = await this.crudReservationsService.transitionStatus(
+          {
+            id,
+            from: ["pending", "active", "failed"],
+            to: "cancelled",
+            endedAt: new Date(),
+          },
+          tx,
+        );
+
+        if (!cancelled) {
+          throw new ConflictException(
+            "The reservation cannot be destroyed because it already ended",
+          );
+        }
+
+        return { machine: claimedMachine, reservation: cancelled };
+      });
+
+    try {
+      await this.queuesService.enqueueDestroy({
+        reservationId: id,
+        machineId: destroyingMachine.id,
+        name: destroyingMachine.name,
+        containerId: destroyingMachine.containerId,
+        reservationStatus: reservation.status,
+      });
+    } catch (error) {
+      await db.transaction(async (tx) => {
+        await this.crudMachinesService.transitionStatus(
+          {
+            id: machine.id,
+            from: ["destroying"],
+            to: machine.status,
+          },
+          tx,
+        );
+
+        await this.crudReservationsService.transitionStatus(
+          {
+            id,
+            from: ["cancelled"],
+            to: reservation.status,
+            endedAt: reservation.endedAt,
+          },
+          tx,
+        );
+      });
+
+      throw error;
+    }
+
+    const { userId: reservationUserId, ...restReservation } =
+      cancelledReservation;
+
+    const {
+      workerId,
+      containerId,
+      lastError,
+      sshUsername,
+      sshPassword,
+      sshPort,
+      ...restMachine
+    } = destroyingMachine;
+
+    return { reservation: restReservation, machine: restMachine };
   }
 }
