@@ -10,23 +10,21 @@ function renderImages(images) {
         container.innerHTML += `
             <article class="lab-card">
                 <h3>${image.name}</h3>
-                <p>${image.description}</p>
                 <p>Version: ${image.tag}</p>
-                <p>Default CPU: ${image.defaultCpu}</p>
-                <p>Default RAM: ${image.defaultRam} MB</p>
-                <p>Exposed port: ${image.exposedPort}</p>
+                <p>Maximum CPU: ${image.maxCpu} CPU</p>
+                <p>Maximum RAM: ${image.maxRam} MB</p>
 
                 <label>
                     CPU:
                     <select class="reservation-cpu">
-                        <option value="${image.defaultCpu}">${image.defaultCpu} CPU</option>
+                        <option value="${image.maxCpu}">${image.maxCpu} millicores</option>
                     </select>
                 </label>
 
                 <label>
                     RAM:
                     <select class="reservation-ram">
-                        <option value="${image.defaultRam}">${image.defaultRam} MB</option>
+                        <option value="${image.maxRam}">${image.maxRam} MB</option>
                     </select>
                 </label>
 
@@ -197,8 +195,8 @@ function renderReservations(reservationsToRender) {
 
             try {
                 await deleteReservationRequest(reservationId);
-                const reservations = await getReservations();
-                renderReservations(reservations);
+                await refreshReservations();
+                await refreshMachines();
             } catch (error) {
                 console.error(error);
                 alert(error.message);

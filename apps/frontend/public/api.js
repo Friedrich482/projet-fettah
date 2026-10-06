@@ -1,13 +1,4 @@
-const imageTemplates = [
-    {
-        name: "web-pentest-basic",
-        tag: "latest",
-        description: "Basic environment for web penetration testing.",
-        defaultCpu: 1,
-        defaultRam: 512,
-        exposedPort: 8080
-    }
-];
+const API_BASE_URL = window.APP_CONFIG.API_BASE_URL;
 
 async function handleApiError(response, fallbackMessage) {
     let message = fallbackMessage;
@@ -28,11 +19,20 @@ async function handleApiError(response, fallbackMessage) {
 }
 
 async function getImages() {
-    return imageTemplates;
+    const response = await fetch(`${API_BASE_URL}/images`, {
+        method: "GET",
+        credentials: "include"
+    });
+
+    if (!response.ok) {
+        await handleApiError(response, "Failed to load images");
+    }
+
+    return response.json();
 }
 
 async function getMachines() {
-    const response = await fetch("http://localhost:3040/machines", {
+    const response = await fetch(`${API_BASE_URL}/machines`, {
         method: "GET",
         credentials: "include"
     });
@@ -45,7 +45,7 @@ async function getMachines() {
 }
 
 async function startMachineRequest(id) {
-    const response = await fetch(`http://localhost:3040/machines/${id}/start`,
+    const response = await fetch(`${API_BASE_URL}/machines/${id}/start`,
         {
             method: "POST",
             credentials: "include"
@@ -60,7 +60,7 @@ async function startMachineRequest(id) {
 }
 
 async function stopMachineRequest(id) {
-    const response = await fetch(`http://localhost:3040/machines/${id}/stop`,
+    const response = await fetch(`${API_BASE_URL}/machines/${id}/stop`,
         {
             method: "POST",
             credentials: "include"
@@ -75,7 +75,7 @@ async function stopMachineRequest(id) {
 }
 
 async function getReservations() {
-    const response = await fetch("http://localhost:3040/reservations", {
+    const response = await fetch(`${API_BASE_URL}/reservations`, {
         method: "GET",
         credentials: "include"
     });
@@ -88,7 +88,7 @@ async function getReservations() {
 }
 
 async function createReservationRequest(imageName, imageTag, machineCpu, machineRam, duration) {
-    const response = await fetch("http://localhost:3040/reservations", {
+    const response = await fetch(`${API_BASE_URL}/reservations`, {
         method: "POST",
         headers: {
             "Content-Type": "application/json"
@@ -111,7 +111,7 @@ async function createReservationRequest(imageName, imageTag, machineCpu, machine
 }
 
 async function deleteReservationRequest(id) {
-    const response = await fetch(`http://localhost:3040/reservations/${id}`,
+    const response = await fetch(`${API_BASE_URL}/reservations/${id}`,
         {
             method: "DELETE",
             credentials: "include"
@@ -130,7 +130,7 @@ async function deleteReservationRequest(id) {
 }
 
 async function login(email, password) {
-    const response = await fetch("http://localhost:3040/auth/sign-in/email", {
+    const response = await fetch(`${API_BASE_URL}/auth/sign-in/email`, {
         method: "POST",
         headers: {
             "Content-Type": "application/json"
@@ -150,7 +150,7 @@ async function login(email, password) {
 }
 
 async function logout() {
-    const response = await fetch("http://localhost:3040/auth/sign-out", {
+    const response = await fetch(`${API_BASE_URL}/auth/sign-out`, {
         method: "POST",
         credentials: "include"
     });
@@ -163,7 +163,7 @@ async function logout() {
 }
 
 async function signup(name, email, password) {
-    const response = await fetch("http://localhost:3040/auth/sign-up/email", {
+    const response = await fetch(`${API_BASE_URL}/auth/sign-up/email`, {
         method: "POST",
         headers: {
             "Content-Type": "application/json"
@@ -184,7 +184,7 @@ async function signup(name, email, password) {
 }
 
 async function getSession() {
-    const response = await fetch("http://localhost:3040/auth/get-session", {
+    const response = await fetch(`${API_BASE_URL}/auth/get-session`, {
         method: "GET",
         credentials: "include"
     });
