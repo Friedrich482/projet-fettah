@@ -9,3 +9,6 @@ allowBuilds:
   protobufjs: false
   ssh2: false
   unrs-resolver: false
+syncInjectedDepsAfterScripts:
+  - build
+confirmModulesPurge: false
