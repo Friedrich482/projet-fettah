@@ -11,7 +11,7 @@ function renderImages(images) {
             <article class="lab-card">
                 <h3>${image.name}</h3>
                 <p>Version: ${image.tag}</p>
-                <p>Maximum CPU: ${image.maxCpu} CPU</p>
+                <p>Maximum CPU: ${image.maxCpu} millicores</p>
                 <p>Maximum RAM: ${image.maxRam} MB</p>
 
                 <label>
@@ -31,10 +31,10 @@ function renderImages(images) {
                 <label>
                     Duration:
                     <select class="reservation-duration">
-                        <option value="30">30 minutes</option>
-                        <option value="60">1 hour</option>
-                        <option value="120">2 hours</option>
-                        <option value="180">3 hours</option>
+                        <option value="1800">30 minutes</option>
+                        <option value="3600">1 hour</option>
+                        <option value="7200">2 hours</option>
+                        <option value="10800">3 hours</option>
                     </select>
                 </label>
 
@@ -56,17 +56,19 @@ function renderImages(images) {
             const ram = Number(ramSelect.value);
             const duration = Number(durationSelect.value);
 
+            button.disabled = true;
+            button.textContent = "Reserving...";
+
             try {
                 const created = await createReservationRequest(imageName, imageTag, cpu, ram, duration);
-
-                console.log("Created reservation: ", created.reservation);
-                console.log("Created machine: ", created.machine);
-                
                 await refreshReservations();
                 await refreshMachines();
             } catch (error) {
                 console.error(error);
                 alert(error.message);
+            } finally {
+                button.textContent = "Reserve";
+                updateAuthUI(currentSession);
             }
         });
     });
@@ -101,7 +103,7 @@ function renderMachines(machinesToRender) {
                     ${machine.status}
                     </span>
                 </p>
-                <p>CPU: ${machine.cpu}</p>
+                <p>CPU: ${machine.cpu} millicores</p>
                 <p>RAM: ${machine.ram} MB</p>
                 ${actionButton}
             </article>
@@ -160,6 +162,8 @@ function renderReservations(reservationsToRender) {
     }
 
     reservationsToRender.forEach((reservation) => {
+        const durationMinutes = reservation.duration / 60;
+        
         const expiresAt = reservation.expiresAt
             ? new Date(reservation.expiresAt).toLocaleString()
             : "Not set yet";
@@ -167,6 +171,10 @@ function renderReservations(reservationsToRender) {
         const endedAt = reservation.endedAt
             ? new Date(reservation.endedAt).toLocaleString()
             : "Not ended";
+        
+        const releaseButton = reservation.status === "active"
+            ? `<button class="release-reservation-btn danger-btn" data-reservation-id="${reservation.id}">Release</button>`
+            : "";
 
         container.innerHTML += `
             <article class="lab-card">
@@ -178,10 +186,10 @@ function renderReservations(reservationsToRender) {
                             ${reservation.status}
                         </span>
                 </p>
-                <p>Duration: ${reservation.duration} minutes</p>
+                <p>Duration: ${durationMinutes} minutes</p>
                 <p>Expires at: ${expiresAt}</p>
                 <p>Ended at: ${endedAt}</p>
-                <button class="release-reservation-btn danger-btn" data-reservation-id="${reservation.id}">Release</button>
+                ${releaseButton}
             </article>
         `;
     });
@@ -335,7 +343,11 @@ async function refreshReservations() {
 
     try {
         const reservations = await getReservations();
-        renderReservations(reservations);
+        const activeReservations = reservations.filter(
+            (reservation) =>
+                reservation.status !== "cancelled" &&
+                reservation.status !== "expired");
+        renderReservations(activeReservations);
     } catch (error) {
         console.error("Failed to refresh reservations: ", error);
 
@@ -382,7 +394,8 @@ async function refreshMachines() {
 
     try {
         const machines = await getMachines();
-        renderMachines(machines);
+        const activeMachines = machines.filter((machine) => machine.status !== "destroyed");
+        renderMachines(activeMachines);
     } catch (error) {
         console.error("Failed to refresh machines: ", error);
 
