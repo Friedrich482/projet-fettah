@@ -74,6 +74,19 @@ async function stopMachineRequest(id) {
     return response.json();
 }
 
+async function connectMachineRequest(id) {
+    const response = await fetch(`${API_BASE_URL}/machines/${id}/connect`, {
+        method: "POST",
+        credentials: "include"
+    });
+
+    if (!response.ok) {
+        await handleApiError(response, "Failed to retrieve machine connection details");
+    }
+
+    return response.json();
+}
+
 async function getReservations() {
     const response = await fetch(`${API_BASE_URL}/reservations`, {
         method: "GET",

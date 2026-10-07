@@ -87,11 +87,14 @@ function renderMachines(machinesToRender) {
     }
 
     machinesToRender.forEach((machine) => {
-        const actionButton = machine.status === "running"
-            ? `<button class="stop-machine-btn danger-btn" data-machine-id="${machine.id}">Stop</button>`
-                : machine.status === "stopped"
-                    ? `<button class="start-machine-btn primary-btn" data-machine-id="${machine.id}">Start</button>`
-                        : "";
+        const actionButtons = machine.status === "running"
+            ? `
+                <button class="stop-machine-btn danger-btn" data-machine-id="${machine.id}">Stop</button>
+                <button class="connect-machine-btn primary-btn" data-machine-id="${machine.id}">Connect</button>
+            `
+            : machine.status === "stopped"
+                ? `<button class="start-machine-btn primary-btn" data-machine-id="${machine.id}">Start</button>`
+                : "";
 
         container.innerHTML += `
             <article class="lab-card">
@@ -105,7 +108,7 @@ function renderMachines(machinesToRender) {
                 </p>
                 <p>CPU: ${machine.cpu} millicores</p>
                 <p>RAM: ${machine.ram} MB</p>
-                ${actionButton}
+                ${actionButtons}
             </article>
         `;
     });
@@ -149,6 +152,33 @@ function renderMachines(machinesToRender) {
             }
         });
     });
+
+    document.querySelectorAll(".connect-machine-btn").forEach((button) => {
+        button.addEventListener("click", async () => {
+            const machineId = button.dataset.machineId;
+
+            button.disabled = true;
+            button.textContent = "Connecting...";
+
+            try {
+                const connection = await connectMachineRequest(machineId);
+                alert (
+                    `SSH connection details:\n\n` +
+                    `Host: ${connection.host}\n` +
+                    `Port: ${connection.port}\n` +
+                    `Username: ${connection.username}\n` +
+                    `Password: ${connection.password}\n\n` +
+                    `Command:\nssh ${connection.username}@${connection.host} -p ${connection.port}`
+                );
+            } catch (error) {
+                console.error(error);
+                alert(error.message);
+            } finally {
+                button.disabled = false;
+                button.textContent = "Connect";
+            }
+        });
+    });
 }
 
 function renderReservations(reservationsToRender) {
@@ -163,7 +193,7 @@ function renderReservations(reservationsToRender) {
 
     reservationsToRender.forEach((reservation) => {
         const durationMinutes = reservation.duration / 60;
-        
+
         const expiresAt = reservation.expiresAt
             ? new Date(reservation.expiresAt).toLocaleString()
             : "Not set yet";
