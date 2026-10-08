@@ -1,6 +1,11 @@
 console.log("Lab Hacker frontend loaded");
 
 let currentSession = null;
+const machineConnections = new Map();
+
+function getSshCommand(connection) {
+    return `ssh ${connection.username}@${connection.host} -p ${connection.port}`;
+}
 
 function renderImages(images) {
     const container = document.getElementById("available-labs");
@@ -95,6 +100,36 @@ function renderMachines(machinesToRender) {
             : machine.status === "stopped"
                 ? `<button class="start-machine-btn primary-btn" data-machine-id="${machine.id}">Start</button>`
                 : "";
+        
+        const connection = machineConnections.get(machine.id);
+        const connectionPanel = machine.status === "running" && connection
+            ? `
+                <div class="connection-panel">
+                    <h4>Connection details</h4>
+                    
+                    <p><strong>Host:</strong> ${connection.host}</p>
+                    <p><strong>Port:</strong> ${connection.port}</p>
+                    <p><strong>Username:</strong> ${connection.username}</p>
+                    <p><strong>Password:</strong> <code>${connection.password}</code></p>
+
+                    <p class="ssh-command">
+                        <code>${getSshCommand(connection)}</code>
+                    </p>
+
+                    <p class="connection-note">
+                        If SSH reports "REMOTE HOST IDENTIFICATION HAS CHANGED", run:
+                    </p>
+
+                    <p class="ssh-command">
+                        <code>ssh-keygen -f ~/.ssh/known_hosts -R '[${connection.host}]:${connection.port}'</code>
+                    </p>
+
+                    <button class="copy-command-btn" data-machine-id="${machine.id}">Copy SSH command</button>
+                    <button class="copy-password-btn" data-machine-id="${machine.id}">Copy password</button>
+                    <button class="close-connection-btn" data-machine-id="${machine.id}">Close</button>
+                </div>
+            `
+            : "";
 
         container.innerHTML += `
             <article class="lab-card">
@@ -109,6 +144,7 @@ function renderMachines(machinesToRender) {
                 <p>CPU: ${machine.cpu} millicores</p>
                 <p>RAM: ${machine.ram} MB</p>
                 ${actionButtons}
+                ${connectionPanel}
             </article>
         `;
     });
@@ -122,6 +158,7 @@ function renderMachines(machinesToRender) {
 
             try {
                 await startMachineRequest(machineId);
+                machineConnections.delete(machineId);
                 await refreshMachines();
             } catch (error) {
                 console.error(error);
@@ -142,6 +179,7 @@ function renderMachines(machinesToRender) {
 
             try {
                 await stopMachineRequest(machineId);
+                machineConnections.delete(machineId);
                 await refreshMachines();
             } catch (error) {
                 console.error(error);
@@ -162,14 +200,8 @@ function renderMachines(machinesToRender) {
 
             try {
                 const connection = await connectMachineRequest(machineId);
-                alert (
-                    `SSH connection details:\n\n` +
-                    `Host: ${connection.host}\n` +
-                    `Port: ${connection.port}\n` +
-                    `Username: ${connection.username}\n` +
-                    `Password: ${connection.password}\n\n` +
-                    `Command:\nssh ${connection.username}@${connection.host} -p ${connection.port}`
-                );
+                machineConnections.set(machineId, connection);
+                await refreshMachines();
             } catch (error) {
                 console.error(error);
                 alert(error.message);
@@ -179,6 +211,43 @@ function renderMachines(machinesToRender) {
             }
         });
     });
+
+    document.querySelectorAll(".close-connection-btn").forEach((button) => {
+        button.addEventListener("click", async () => {
+            const machineId = button.dataset.machineId;
+            machineConnections.delete(machineId);
+            await refreshMachines();
+        })
+    })
+
+    document.querySelectorAll(".copy-command-btn").forEach((button) => {
+        button.addEventListener("click", async () => {
+            const machineId = button.dataset.machineId;
+            const connection = machineConnections.get(machineId);
+
+            if (!connection) {
+                return;
+            }
+
+            await navigator.clipboard.writeText(getSshCommand(connection));
+            button.textContent = "Copied!";
+        });
+    });
+    
+    document.querySelectorAll(".copy-password-btn").forEach((button) => {
+        button.addEventListener("click", async () => {
+            const machineId = button.dataset.machineId;
+
+            const connection = machineConnections.get(machineId);
+
+            if (!connection) {
+                return;
+            }
+
+            await navigator.clipboard.writeText(connection.password);
+            button.textContent = "Copied!";
+        })
+    })
 }
 
 function renderReservations(reservationsToRender) {
