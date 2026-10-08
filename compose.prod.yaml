@@ -57,12 +57,31 @@ services:
     networks:
       - projet-deploiement-network
 
+  drizzle-gateway:
+    image: ghcr.io/drizzle-team/gateway:1.6.2
+    container_name: projet-deploiement-drizzle-gateway-container
+    restart: always
+    env_file:
+      - apps/api/.env.gateway
+    ports:
+      - 127.0.0.1:4992:4983
+    depends_on:
+      prod-database:
+        condition: service_healthy
+    volumes:
+      - projet-deploiement-drizzle-gateway:/app
+    networks:
+      - projet-deploiement-network
+
 volumes:
   projet-deploiement-database:
     name: projet-deploiement-database
 
   projet-deploiement-redis:
     name: projet-deploiement-redis
+
+  projet-deploiement-drizzle-gateway:
+    name: projet-deploiement-drizzle-gateway
 
 networks:
   projet-deploiement-network:

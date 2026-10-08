@@ -14,7 +14,7 @@
   },
   "scripts": {
     "dev": "tsc --watch",
-    "build": "tsc",
+    "build": "tsc && cp -R src/drizzle/migrations dist/src/drizzle/migrations",
     "check-types": "tsc --noEmit",
     "lint": "eslint . --fix",
     "format": "prettier --write \"**/*.ts\"",
@@ -37,6 +37,8 @@
   },
   "devDependencies": {
     "@repo/eslint-config": "workspace:*",
+    "@types/pg": "^8.23.1",
+    "drizzle-kit": "1.0.0-rc.4",
     "eslint": "9.39.2",
     "prettier": "^3.8.3",
     "typescript": "^5.9.3"
@@ -45,9 +47,7 @@
     "@repo/common": "workspace:*",
     "dotenv": "^18.0.4",
     "drizzle-orm": "1.0.0-rc.4",
-    "drizzle-kit": "1.0.0-rc.4",
     "pg": "^8.23.0",
-    "@types/pg": "^8.23.1",
     "ulid": "^3.0.2"
   },
   "imports": {
