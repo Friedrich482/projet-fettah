@@ -1,0 +1,29 @@
+{
+  "name": "projet-deploiement",
+  "private": true,
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "turbo run dev",
+    "lint": "turbo run lint",
+    "format": "turbo run format",
+    "check-types": "turbo run check-types"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "devEngines": {
+    "packageManager": {
+      "name": "pnpm",
+      "version": "12.10.1"
+    },
+    "runtime": {
+      "name": "node",
+      "version": "24.13.0",
+      "onFail": "download"
+    }
+  },
+  "devDependencies": {
+    "turbo": "^2.11.5",
+    "typescript": "5.9.3"
+  }
+}

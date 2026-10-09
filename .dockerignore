@@ -1,0 +1,16 @@
+**/dist
+tsconfig.tsbuildinfo
+**/tsconfig.tsbuildinfo
+.log
+**/.env*
+.dockerignore
+**/compose.*.yaml
+**/node_modules
+**/eslint.config.ts
+**/vitest*.ts
+**/.next
+**/out
+**/*.test.ts
+.git
+.gitignore
+*.md
