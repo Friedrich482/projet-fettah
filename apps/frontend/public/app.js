@@ -4,15 +4,15 @@ let currentSession = null;
 const machineConnections = new Map();
 
 function getSshCommand(connection) {
-    return `ssh ${connection.username}@${connection.host} -p ${connection.port}`;
+  return `ssh ${connection.username}@${connection.host} -p ${connection.port}`;
 }
 
 function renderImages(images) {
-    const container = document.getElementById("available-labs");
-    container.innerHTML = "";
+  const container = document.getElementById("available-labs");
+  container.innerHTML = "";
 
-    images.forEach((image) => {
-        container.innerHTML += `
+  images.forEach((image) => {
+    container.innerHTML += `
             <article class="lab-card">
                 <h3>${image.name}</h3>
                 <p>Version: ${image.tag}</p>
@@ -46,64 +46,72 @@ function renderImages(images) {
                 <button class="create-lab-btn primary-btn" data-image-name="${image.name}" data-image-tag="${image.tag}">Reserve</button>
             </article>
         `;
+  });
+
+  document.querySelectorAll(".create-lab-btn").forEach((button) => {
+    button.addEventListener("click", async () => {
+      const card = button.closest(".lab-card");
+      const cpuSelect = card.querySelector(".reservation-cpu");
+      const ramSelect = card.querySelector(".reservation-ram");
+      const durationSelect = card.querySelector(".reservation-duration");
+
+      const imageName = button.dataset.imageName;
+      const imageTag = button.dataset.imageTag;
+      const cpu = Number(cpuSelect.value);
+      const ram = Number(ramSelect.value);
+      const duration = Number(durationSelect.value);
+
+      button.disabled = true;
+      button.textContent = "Reserving...";
+
+      try {
+        const created = await createReservationRequest(
+          imageName,
+          imageTag,
+          cpu,
+          ram,
+          duration,
+        );
+        await refreshReservations();
+        await refreshMachines();
+      } catch (error) {
+        console.error(error);
+        alert(error.message);
+      } finally {
+        button.textContent = "Reserve";
+        updateAuthUI(currentSession);
+      }
     });
+  });
 
-    document.querySelectorAll(".create-lab-btn").forEach((button) => {
-        button.addEventListener("click", async () => {
-            const card = button.closest(".lab-card");
-            const cpuSelect = card.querySelector(".reservation-cpu");
-            const ramSelect = card.querySelector(".reservation-ram");
-            const durationSelect = card.querySelector(".reservation-duration");
-
-            const imageName = button.dataset.imageName;
-            const imageTag = button.dataset.imageTag;
-            const cpu = Number(cpuSelect.value);
-            const ram = Number(ramSelect.value);
-            const duration = Number(durationSelect.value);
-
-            button.disabled = true;
-            button.textContent = "Reserving...";
-
-            try {
-                const created = await createReservationRequest(imageName, imageTag, cpu, ram, duration);
-                await refreshReservations();
-                await refreshMachines();
-            } catch (error) {
-                console.error(error);
-                alert(error.message);
-            } finally {
-                button.textContent = "Reserve";
-                updateAuthUI(currentSession);
-            }
-        });
-    });
-
-    updateAuthUI(currentSession);
+  updateAuthUI(currentSession);
 }
 
 function renderMachines(machinesToRender) {
-    const container = document.getElementById("machine-list");
+  const container = document.getElementById("machine-list");
 
-    container.innerHTML = "";
+  container.innerHTML = "";
 
-    if (machinesToRender.length === 0) {
-        container.innerHTML = "<p>No machines found.</p>";
-        return;
-    }
+  if (machinesToRender.length === 0) {
+    container.innerHTML = "<p>No machines found.</p>";
+    return;
+  }
 
-    machinesToRender.forEach((machine) => {
-        const actionButtons = machine.status === "running"
-            ? `
+  machinesToRender.forEach((machine) => {
+    const actionButtons =
+      machine.status === "running"
+        ? `
                 <button class="stop-machine-btn danger-btn" data-machine-id="${machine.id}">Stop</button>
                 <button class="connect-machine-btn primary-btn" data-machine-id="${machine.id}">Connect</button>
             `
-            : machine.status === "stopped"
-                ? `<button class="start-machine-btn primary-btn" data-machine-id="${machine.id}">Start</button>`
-                : "";
-        
-        const connection = machineConnections.get(machine.id);
-        const connectionPanel = machine.status === "running" && connection
-            ? `
+        : machine.status === "stopped"
+          ? `<button class="start-machine-btn primary-btn" data-machine-id="${machine.id}">Start</button>`
+          : "";
+
+    const connection = machineConnections.get(machine.id);
+    const connectionPanel =
+      machine.status === "running" && connection
+        ? `
                 <div class="connection-panel">
                     <h4>Connection details</h4>
                     
@@ -129,9 +137,9 @@ function renderMachines(machinesToRender) {
                     <button class="close-connection-btn" data-machine-id="${machine.id}">Close</button>
                 </div>
             `
-            : "";
+        : "";
 
-        container.innerHTML += `
+    container.innerHTML += `
             <article class="lab-card">
                 <h3>${machine.name}</h3>
                 <p class="meta">Machine ID: ${machine.id}</p>
@@ -147,135 +155,136 @@ function renderMachines(machinesToRender) {
                 ${connectionPanel}
             </article>
         `;
+  });
+
+  document.querySelectorAll(".start-machine-btn").forEach((button) => {
+    button.addEventListener("click", async () => {
+      const machineId = button.dataset.machineId;
+
+      button.disabled = true;
+      button.textContent = "Starting...";
+
+      try {
+        await startMachineRequest(machineId);
+        machineConnections.delete(machineId);
+        await refreshMachines();
+      } catch (error) {
+        console.error(error);
+        alert(error.message);
+
+        button.disabled = false;
+        button.textContent = "Start";
+      }
     });
+  });
 
-    document.querySelectorAll(".start-machine-btn").forEach((button) => {
-        button.addEventListener("click", async () => {
-            const machineId = button.dataset.machineId;
+  document.querySelectorAll(".stop-machine-btn").forEach((button) => {
+    button.addEventListener("click", async () => {
+      const machineId = button.dataset.machineId;
 
-            button.disabled = true;
-            button.textContent = "Starting...";
+      button.disabled = true;
+      button.textContent = "Stopping...";
 
-            try {
-                await startMachineRequest(machineId);
-                machineConnections.delete(machineId);
-                await refreshMachines();
-            } catch (error) {
-                console.error(error);
-                alert(error.message);
+      try {
+        await stopMachineRequest(machineId);
+        machineConnections.delete(machineId);
+        await refreshMachines();
+      } catch (error) {
+        console.error(error);
+        alert(error.message);
 
-                button.disabled = false;
-                button.textContent = "Start";
-            }
-        });
+        button.disabled = false;
+        button.textContent = "Stop";
+      }
     });
+  });
 
-    document.querySelectorAll(".stop-machine-btn").forEach((button) => {
-        button.addEventListener("click", async () => {
-            const machineId = button.dataset.machineId;
+  document.querySelectorAll(".connect-machine-btn").forEach((button) => {
+    button.addEventListener("click", async () => {
+      const machineId = button.dataset.machineId;
 
-            button.disabled = true;
-            button.textContent = "Stopping...";
+      button.disabled = true;
+      button.textContent = "Connecting...";
 
-            try {
-                await stopMachineRequest(machineId);
-                machineConnections.delete(machineId);
-                await refreshMachines();
-            } catch (error) {
-                console.error(error);
-                alert(error.message);
-
-                button.disabled = false;
-                button.textContent = "Stop";
-            }
-        });
+      try {
+        const connection = await connectMachineRequest(machineId);
+        machineConnections.set(machineId, connection);
+        await refreshMachines();
+      } catch (error) {
+        console.error(error);
+        alert(error.message);
+      } finally {
+        button.disabled = false;
+        button.textContent = "Connect";
+      }
     });
+  });
 
-    document.querySelectorAll(".connect-machine-btn").forEach((button) => {
-        button.addEventListener("click", async () => {
-            const machineId = button.dataset.machineId;
-
-            button.disabled = true;
-            button.textContent = "Connecting...";
-
-            try {
-                const connection = await connectMachineRequest(machineId);
-                machineConnections.set(machineId, connection);
-                await refreshMachines();
-            } catch (error) {
-                console.error(error);
-                alert(error.message);
-            } finally {
-                button.disabled = false;
-                button.textContent = "Connect";
-            }
-        });
+  document.querySelectorAll(".close-connection-btn").forEach((button) => {
+    button.addEventListener("click", async () => {
+      const machineId = button.dataset.machineId;
+      machineConnections.delete(machineId);
+      await refreshMachines();
     });
+  });
 
-    document.querySelectorAll(".close-connection-btn").forEach((button) => {
-        button.addEventListener("click", async () => {
-            const machineId = button.dataset.machineId;
-            machineConnections.delete(machineId);
-            await refreshMachines();
-        })
-    })
+  document.querySelectorAll(".copy-command-btn").forEach((button) => {
+    button.addEventListener("click", async () => {
+      const machineId = button.dataset.machineId;
+      const connection = machineConnections.get(machineId);
 
-    document.querySelectorAll(".copy-command-btn").forEach((button) => {
-        button.addEventListener("click", async () => {
-            const machineId = button.dataset.machineId;
-            const connection = machineConnections.get(machineId);
+      if (!connection) {
+        return;
+      }
 
-            if (!connection) {
-                return;
-            }
-
-            await navigator.clipboard.writeText(getSshCommand(connection));
-            button.textContent = "Copied!";
-        });
+      await navigator.clipboard.writeText(getSshCommand(connection));
+      button.textContent = "Copied!";
     });
-    
-    document.querySelectorAll(".copy-password-btn").forEach((button) => {
-        button.addEventListener("click", async () => {
-            const machineId = button.dataset.machineId;
+  });
 
-            const connection = machineConnections.get(machineId);
+  document.querySelectorAll(".copy-password-btn").forEach((button) => {
+    button.addEventListener("click", async () => {
+      const machineId = button.dataset.machineId;
 
-            if (!connection) {
-                return;
-            }
+      const connection = machineConnections.get(machineId);
 
-            await navigator.clipboard.writeText(connection.password);
-            button.textContent = "Copied!";
-        })
-    })
+      if (!connection) {
+        return;
+      }
+
+      await navigator.clipboard.writeText(connection.password);
+      button.textContent = "Copied!";
+    });
+  });
 }
 
 function renderReservations(reservationsToRender) {
-    const container = document.getElementById("user-labs");
+  const container = document.getElementById("user-labs");
 
-    container.innerHTML = "";
+  container.innerHTML = "";
 
-    if (reservationsToRender.length === 0) {
-        container.innerHTML = "<p>No active reservations.</p>";
-        return;
-    }
+  if (reservationsToRender.length === 0) {
+    container.innerHTML = "<p>No active reservations.</p>";
+    return;
+  }
 
-    reservationsToRender.forEach((reservation) => {
-        const durationMinutes = reservation.duration / 60;
+  reservationsToRender.forEach((reservation) => {
+    const durationMinutes = reservation.duration / 60;
 
-        const expiresAt = reservation.expiresAt
-            ? new Date(reservation.expiresAt).toLocaleString()
-            : "Not set yet";
+    const expiresAt = reservation.expiresAt
+      ? new Date(reservation.expiresAt).toLocaleString()
+      : "Not set yet";
 
-        const endedAt = reservation.endedAt
-            ? new Date(reservation.endedAt).toLocaleString()
-            : "Not ended";
-        
-        const releaseButton = reservation.status === "active"
-            ? `<button class="release-reservation-btn danger-btn" data-reservation-id="${reservation.id}">Release</button>`
-            : "";
+    const endedAt = reservation.endedAt
+      ? new Date(reservation.endedAt).toLocaleString()
+      : "Not ended";
 
-        container.innerHTML += `
+    const releaseButton =
+      reservation.status === "active"
+        ? `<button class="release-reservation-btn danger-btn" data-reservation-id="${reservation.id}">Release</button>`
+        : "";
+
+    container.innerHTML += `
             <article class="lab-card">
                 <h3>Reservation</h3>
                 <p class="meta">Reservation ID: ${reservation.id}</p>
@@ -291,256 +300,262 @@ function renderReservations(reservationsToRender) {
                 ${releaseButton}
             </article>
         `;
+  });
+
+  document.querySelectorAll(".release-reservation-btn").forEach((button) => {
+    button.addEventListener("click", async () => {
+      const reservationId = button.dataset.reservationId;
+
+      button.disabled = true;
+      button.textContent = "Releasing...";
+
+      try {
+        await deleteReservationRequest(reservationId);
+        await refreshReservations();
+        await refreshMachines();
+      } catch (error) {
+        console.error(error);
+        alert(error.message);
+        button.disabled = false;
+        button.textContent = "Release";
+      }
     });
-
-    document.querySelectorAll(".release-reservation-btn").forEach((button) => {
-        button.addEventListener("click", async () => {
-            const reservationId = button.dataset.reservationId;
-
-            button.disabled = true;
-            button.textContent = "Releasing...";
-
-            try {
-                await deleteReservationRequest(reservationId);
-                await refreshReservations();
-                await refreshMachines();
-            } catch (error) {
-                console.error(error);
-                alert(error.message);
-                button.disabled = false;
-                button.textContent = "Release";
-            }
-        });
-    });
+  });
 }
 
 const loginForm = document.getElementById("login-form");
 
 loginForm.addEventListener("submit", async (event) => {
-    event.preventDefault();
+  event.preventDefault();
 
-    const email = document.getElementById("login-email").value;
-    const password = document.getElementById("login-password").value;
-    const authMessage = document.getElementById("auth-message");
+  const email = document.getElementById("login-email").value;
+  const password = document.getElementById("login-password").value;
+  const authMessage = document.getElementById("auth-message");
 
-    authMessage.textContent = "Logging in...";
+  authMessage.textContent = "Logging in...";
 
-    try {
-        await login(email, password);
-        await checkSession();
-        await refreshReservations();
-        await refreshMachines();
-        startReservationPolling();
-        loginForm.reset();
-    } catch (error) {
-        console.error(error);
-        authMessage.textContent = "Login failed.";
-    }
+  try {
+    await login(email, password);
+    await checkSession();
+    await refreshReservations();
+    await refreshMachines();
+    startReservationPolling();
+    loginForm.reset();
+  } catch (error) {
+    console.error(error);
+    authMessage.textContent = "Login failed.";
+  }
 });
 
 const signupForm = document.getElementById("signup-form");
 
 signupForm.addEventListener("submit", async (event) => {
-    event.preventDefault();
+  event.preventDefault();
 
-    const name = document.getElementById("signup-name").value;
-    const email = document.getElementById("signup-email").value;
-    const password = document.getElementById("signup-password").value;
-    const signupMessage = document.getElementById("signup-message");
+  const name = document.getElementById("signup-name").value;
+  const email = document.getElementById("signup-email").value;
+  const password = document.getElementById("signup-password").value;
+  const signupMessage = document.getElementById("signup-message");
 
-    signupMessage.textContent = "Creating account...";
+  signupMessage.textContent = "Creating account...";
 
-    try {
-        await signup(name, email, password);
-        const session = await checkSession();
+  try {
+    await signup(name, email, password);
+    const session = await checkSession();
 
-        if (session?.user) {
-            await refreshReservations();
-            await refreshMachines();
-            startReservationPolling();
-        }
-        
-        signupMessage.textContent = "Account created successfully.";
-        signupForm.reset();
-    } catch (error) {
-        console.error(error);
-        signupMessage.textContent = "Sign up failed.";
+    if (session?.user) {
+      await refreshReservations();
+      await refreshMachines();
+      startReservationPolling();
     }
+
+    signupMessage.textContent = "Account created successfully.";
+    signupForm.reset();
+  } catch (error) {
+    console.error(error);
+    signupMessage.textContent = "Sign up failed.";
+  }
 });
 
 const logoutButton = document.getElementById("logout-button");
 
 logoutButton.addEventListener("click", async () => {
-    const authMessage = document.getElementById("auth-message");
+  const authMessage = document.getElementById("auth-message");
 
-    try {
-        await logout();
-        stopReservationPolling();
-        document.getElementById("user-labs").innerHTML = "<p>Log in to view your reservations.</p>";
-        document.getElementById("machine-list").innerHTML = "<p>Log in to view your machines.</p>";
-        await checkSession();
-    } catch (error) {
-        console.error(error);
-        authMessage.textContent = "Logout failed.";
-    }
+  try {
+    await logout();
+    stopReservationPolling();
+    document.getElementById("user-labs").innerHTML =
+      "<p>Log in to view your reservations.</p>";
+    document.getElementById("machine-list").innerHTML =
+      "<p>Log in to view your machines.</p>";
+    await checkSession();
+  } catch (error) {
+    console.error(error);
+    authMessage.textContent = "Logout failed.";
+  }
 });
 
 function updateAuthUI(session) {
-    const loginForm = document.getElementById("login-form");
-    const loginTitle = document.getElementById("login-title");
-    const signupForm = document.getElementById("signup-form");
-    const signupTitle = document.getElementById("signup-title");
-    const logoutButton = document.getElementById("logout-button");
-    const reserveButtons = document.querySelectorAll(".create-lab-btn");
-    const isLoggedIn = Boolean(session?.user);
+  const loginForm = document.getElementById("login-form");
+  const loginTitle = document.getElementById("login-title");
+  const signupForm = document.getElementById("signup-form");
+  const signupTitle = document.getElementById("signup-title");
+  const logoutButton = document.getElementById("logout-button");
+  const reserveButtons = document.querySelectorAll(".create-lab-btn");
+  const isLoggedIn = Boolean(session?.user);
 
-    loginForm.hidden = isLoggedIn;
-    loginTitle.hidden = isLoggedIn;
-    signupForm.hidden = isLoggedIn;
-    signupTitle.hidden = isLoggedIn;
-    logoutButton.hidden = !isLoggedIn;
+  loginForm.hidden = isLoggedIn;
+  loginTitle.hidden = isLoggedIn;
+  signupForm.hidden = isLoggedIn;
+  signupTitle.hidden = isLoggedIn;
+  logoutButton.hidden = !isLoggedIn;
 
-    reserveButtons.forEach((button) => {
-        button.disabled = !isLoggedIn;
-    });
+  reserveButtons.forEach((button) => {
+    button.disabled = !isLoggedIn;
+  });
 }
 
 async function checkSession() {
-    const authMessage = document.getElementById("auth-message");
+  const authMessage = document.getElementById("auth-message");
 
-    try {
-        const session = await getSession();
-        currentSession = session;
+  try {
+    const session = await getSession();
+    currentSession = session;
 
-        if (session?.user) {
-            authMessage.textContent = `Logged in as ${session.user.email}`;
-        } else {
-            authMessage.textContent = "Not logged in.";
-        }
-
-        updateAuthUI(session);
-        return session;
-    } catch (error) {
-        console.error(error);
-        authMessage.textContent = "Failed to check session.";
-        currentSession = null;
-        updateAuthUI(null);
-        return null;
+    if (session?.user) {
+      authMessage.textContent = `Logged in as ${session.user.email}`;
+    } else {
+      authMessage.textContent = "Not logged in.";
     }
+
+    updateAuthUI(session);
+    return session;
+  } catch (error) {
+    console.error(error);
+    authMessage.textContent = "Failed to check session.";
+    currentSession = null;
+    updateAuthUI(null);
+    return null;
+  }
 }
 
 let reservationPollingId = null;
 let isRefreshingReservations = false;
 
 async function refreshReservations() {
-    if (isRefreshingReservations) {
-        return;
+  if (isRefreshingReservations) {
+    return;
+  }
+
+  isRefreshingReservations = true;
+  const userLabsContainer = document.getElementById("user-labs");
+
+  try {
+    const reservations = await getReservations();
+    const activeReservations = reservations.filter(
+      (reservation) =>
+        reservation.status !== "cancelled" && reservation.status !== "expired",
+    );
+    renderReservations(activeReservations);
+  } catch (error) {
+    console.error("Failed to refresh reservations: ", error);
+
+    if (error.status === 401 || error.status === 403) {
+      currentSession = null;
+      stopReservationPolling();
+      updateAuthUI(null);
+
+      document.getElementById("auth-message").textContent =
+        "Your session has expired. Please log in again.";
+      userLabsContainer.innerHTML = "<p>Log in to view your reservations.</p>";
+      return;
     }
 
-    isRefreshingReservations = true;
-    const userLabsContainer = document.getElementById("user-labs");
-
-    try {
-        const reservations = await getReservations();
-        const activeReservations = reservations.filter(
-            (reservation) =>
-                reservation.status !== "cancelled" &&
-                reservation.status !== "expired");
-        renderReservations(activeReservations);
-    } catch (error) {
-        console.error("Failed to refresh reservations: ", error);
-
-        if (error.status === 401 || error.status === 403) {
-            currentSession = null;
-            stopReservationPolling();
-            updateAuthUI(null);
-
-            document.getElementById("auth-message").textContent = "Your session has expired. Please log in again.";
-            userLabsContainer.innerHTML = "<p>Log in to view your reservations.</p>";
-            return;
-        }
-
-        userLabsContainer.innerHTML = "<p>Failed to refresh reservations.</p>";
-    } finally {
-        isRefreshingReservations = false;
-    }
+    userLabsContainer.innerHTML = "<p>Failed to refresh reservations.</p>";
+  } finally {
+    isRefreshingReservations = false;
+  }
 }
 
 function stopReservationPolling() {
-    if (reservationPollingId !== null) {
-        clearInterval(reservationPollingId);
-        reservationPollingId = null;
-    }
+  if (reservationPollingId !== null) {
+    clearInterval(reservationPollingId);
+    reservationPollingId = null;
+  }
 }
 
 function startReservationPolling() {
-    stopReservationPolling();
-    reservationPollingId = setInterval(() => {
-        refreshReservations();
-        refreshMachines();
-    }, 5000);
+  stopReservationPolling();
+  reservationPollingId = setInterval(() => {
+    refreshReservations();
+    refreshMachines();
+  }, 5000);
 }
 
 let isRefreshingMachines = false;
 
 async function refreshMachines() {
-    if (isRefreshingMachines) {
-        return;
+  if (isRefreshingMachines) {
+    return;
+  }
+
+  isRefreshingMachines = true;
+  const machineListContainer = document.getElementById("machine-list");
+
+  try {
+    const machines = await getMachines();
+    const activeMachines = machines.filter(
+      (machine) => machine.status !== "destroyed",
+    );
+    renderMachines(activeMachines);
+  } catch (error) {
+    console.error("Failed to refresh machines: ", error);
+
+    if (error.status === 401 || error.status === 403) {
+      currentSession = null;
+      stopReservationPolling();
+      updateAuthUI(null);
+
+      document.getElementById("auth-message").textContent =
+        "Your session has expired. Please log in again.";
+      machineListContainer.innerHTML = "<p>Log in to view your machines.</p>";
+
+      return;
     }
 
-    isRefreshingMachines = true;
-    const machineListContainer = document.getElementById("machine-list");
-
-    try {
-        const machines = await getMachines();
-        const activeMachines = machines.filter((machine) => machine.status !== "destroyed");
-        renderMachines(activeMachines);
-    } catch (error) {
-        console.error("Failed to refresh machines: ", error);
-
-        if (error.status === 401 || error.status === 403) {
-            currentSession = null;
-            stopReservationPolling();
-            updateAuthUI(null);
-
-            document.getElementById("auth-message").textContent = "Your session has expired. Please log in again.";
-            machineListContainer.innerHTML = "<p>Log in to view your machines.</p>";
-
-            return;
-        }
-
-        machineListContainer.innerHTML = "<p>Failed to refresh machines.</p>";
-    } finally {
-        isRefreshingMachines = false;
-    }
+    machineListContainer.innerHTML = "<p>Failed to refresh machines.</p>";
+  } finally {
+    isRefreshingMachines = false;
+  }
 }
 
 async function initializeApp() {
-    const availableLabsContainer = document.getElementById("available-labs");
-    const userLabsContainer = document.getElementById("user-labs");
+  const availableLabsContainer = document.getElementById("available-labs");
+  const userLabsContainer = document.getElementById("user-labs");
 
-    availableLabsContainer.innerHTML = "<p>Loading lab templates...</p>";
-    userLabsContainer.innerHTML = "<p>Checking session...</p>";
+  availableLabsContainer.innerHTML = "<p>Loading lab templates...</p>";
+  userLabsContainer.innerHTML = "<p>Checking session...</p>";
 
-    try {
-        const images = await getImages();
-        renderImages(images);
-        
-    } catch (error) {
-        console.error(error);
-        availableLabsContainer.innerHTML = "<p>Failed to load lab templates</p>";
-    }
+  try {
+    const images = await getImages();
+    renderImages(images);
+  } catch (error) {
+    console.error(error);
+    availableLabsContainer.innerHTML = "<p>Failed to load lab templates</p>";
+  }
 
-    const session = await checkSession();
+  const session = await checkSession();
 
-    if (session?.user) {
-        await refreshReservations();
-        await refreshMachines();
-        startReservationPolling();
-    } else {
-        userLabsContainer.innerHTML = "<p>Log in to view your reservations.</p>";
-        document.getElementById("machine-list").innerHTML = "<p>Log in to view your machines.</p>";
-    }
+  if (session?.user) {
+    await refreshReservations();
+    await refreshMachines();
+    startReservationPolling();
+  } else {
+    userLabsContainer.innerHTML = "<p>Log in to view your reservations.</p>";
+    document.getElementById("machine-list").innerHTML =
+      "<p>Log in to view your machines.</p>";
+  }
 }
 
 initializeApp();

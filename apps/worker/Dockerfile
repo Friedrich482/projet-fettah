@@ -12,7 +12,6 @@ RUN --mount=type=cache,id=pnpm,target=/var/cache/pnpm \
     pnpm install --store-dir /var/cache/pnpm --frozen-lockfile
 
 COPY . .
-RUN ls ./apps/worker/src/images/assets/kali-ssh
 RUN pnpm run -r build
 
 RUN pnpm --filter=worker --prod deploy /prod/worker

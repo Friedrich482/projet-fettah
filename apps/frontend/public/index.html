@@ -1,80 +1,80 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <link rel="stylesheet" href="style.css">
-        <title>Lab Hacker</title>
-    </head>
-    <body>
-        <header>
-            <h1>Lab Hacker</h1>
-        </header>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="style.css" />
+    <title>Lab Hacker</title>
+  </head>
+  <body>
+    <header>
+      <h1>Lab Hacker</h1>
+    </header>
 
-        <section id="auth-section">
-            <h2 id="login-title">Login</h2>
+    <section id="auth-section">
+      <h2 id="login-title">Login</h2>
 
-            <form id="login-form">
-                <label>
-                    Email: 
-                    <input type="email" id="login-email" required>
-                </label>
+      <form id="login-form">
+        <label>
+          Email:
+          <input type="email" id="login-email" required />
+        </label>
 
-                <label>
-                    Password: 
-                    <input type="password" id="login-password" required>
-                </label>
+        <label>
+          Password:
+          <input type="password" id="login-password" required />
+        </label>
 
-                <button type="submit">Login</button>
-            </form>
+        <button type="submit">Login</button>
+      </form>
 
-            <p id="auth-message"></p>
+      <p id="auth-message"></p>
 
-            <button id="logout-button" type="button">Logout</button>
+      <button id="logout-button" type="button">Logout</button>
 
-            <h2 id="signup-title">Sign Up</h2>
+      <h2 id="signup-title">Sign Up</h2>
 
-            <form id="signup-form">
-                <label>
-                    Name:
-                    <input type="text" id="signup-name" required>
-                </label>
+      <form id="signup-form">
+        <label>
+          Name:
+          <input type="text" id="signup-name" required />
+        </label>
 
-                <label>
-                    Email:
-                    <input type="email" id="signup-email" required>
-                </label>
+        <label>
+          Email:
+          <input type="email" id="signup-email" required />
+        </label>
 
-                <label>
-                    Password:
-                    <input type="password" id="signup-password" required>
-                </label>
+        <label>
+          Password:
+          <input type="password" id="signup-password" required />
+        </label>
 
-                <button type="submit">Create account</button>
-            </form>
+        <button type="submit">Create account</button>
+      </form>
 
-            <p id="signup-message"></p>
-        </section>
+      <p id="signup-message"></p>
+    </section>
 
-        <main>
-            <section>
-                <h2>Available Lab Templates</h2>
-                <div id="available-labs"></div>
-            </section>
+    <main>
+      <section>
+        <h2>Available Lab Templates</h2>
+        <div id="available-labs"></div>
+      </section>
 
-            <section>
-                <h2>My Labs</h2>
-                <div id="user-labs"></div>
-            </section>
+      <section>
+        <h2>My Labs</h2>
+        <div id="user-labs"></div>
+      </section>
 
-            <section>
-                <h2>Machines</h2>
-                <div id="machine-list"></div>
-            </section>
-        </main>
+      <section>
+        <h2>Machines</h2>
+        <div id="machine-list"></div>
+      </section>
+    </main>
 
-        <script src="config.js"></script>
-        <script src="api.js"></script>
-        <script src="app.js"></script>
-    </body>
+    <script src="config.js"></script>
+    <script src="api.js"></script>
+    <script src="app.js"></script>
+  </body>
 </html>

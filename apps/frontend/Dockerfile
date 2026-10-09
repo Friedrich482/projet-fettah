@@ -1,12 +1,21 @@
-FROM nginx:alpine
+FROM nginxinc/nginx-unprivileged:alpine3.23
 
-ARG API_BASE_URL=http://localhost:3040
+WORKDIR /app
+
+ARG API_BASE_URL
 ENV API_BASE_URL=$API_BASE_URL
 
-COPY nginx.conf /etc/nginx/conf.d/default.conf
-COPY public/ /usr/share/nginx/html/
+COPY apps/frontend/nginx.conf /etc/nginx/conf.d/default.conf
+COPY apps/frontend/public/ /usr/share/nginx/html/
 
-COPY docker-entrypoint.sh /docker-entrypoint.sh
-RUN chmod +x /docker-entrypoint.sh
+USER root
+RUN echo "window.APP_CONFIG = { \
+  API_BASE_URL: '$API_BASE_URL', \
+};" > /usr/share/nginx/html/config.js && \
+    chown nginx:nginx /usr/share/nginx/html
 
-ENTRYPOINT ["/docker-entrypoint.sh"]
+USER nginx
+
+EXPOSE 80
+
+CMD ["nginx", "-c", "/etc/nginx/nginx.conf", "-g", "daemon off;"]

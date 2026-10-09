@@ -36,4 +36,5 @@ export const auth = betterAuth({
   basePath: "/auth",
   baseURL: process.env.BETTER_AUTH_URL,
   plugins: [openAPI(), bearer()],
+  trustedOrigins: [process.env.WEB_APP_URL!],
 });
