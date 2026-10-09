@@ -14,7 +14,33 @@ services:
         condition: service_healthy
       prod-redis:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:$${PORT}/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
     container_name: projet-deploiement-api-container
+    networks:
+      - projet-deploiement-network
+
+  worker:
+    build:
+      context: .
+      dockerfile: apps/worker/Dockerfile
+    env_file:
+      - apps/worker/.env.prod
+    depends_on:
+      prod-database:
+        condition: service_healthy
+      prod-redis:
+        condition: service_healthy
+    group_add:
+      - "999"
+    user: "1000:1000"
+    container_name: projet-deploiement-worker-container
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
     networks:
       - projet-deploiement-network
 
@@ -40,7 +66,7 @@ services:
     container_name: projet-deploiement-redis-container
     expose:
       - 6379
-    command: /bin/sh -c 'redis-server --requirepass "$$REDIS_HOST_PASSWORD"'
+    command: /bin/sh -c "redis-server --requirepass $${REDIS_HOST_PASSWORD}"
     healthcheck:
       test:
         [
