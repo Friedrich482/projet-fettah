@@ -109,7 +109,7 @@ def list_images():
 
 @labs_app.command("reserve")
 def reserve_lab(
-    image: Annotated[str, typer.Option("--image", "-i", prompt="Image ou template (ex: kalilinux/kali-rolling ou kali:latest)", help="Image du lab")],
+    image: Annotated[str, typer.Option("--image", "-i", prompt="Image ou template (ex: kalilinux/kali-rolling:latest)", help="Image du lab")],
     duration: Annotated[int, typer.Option("--duration", "-d", help="Durée de validité en minutes")] = 60,
     cpu: Annotated[int, typer.Option("--cpu", help="Nombre de vCPU alloués")] = 1,
     ram: Annotated[str, typer.Option("--ram", help="Quantité de RAM (ex: 1024, 2G)")] = "1024",
@@ -131,9 +131,12 @@ def reserve_lab(
 
     response = client.post("/reservations", json_data=payload)
     data = response.json()
-    res_id = data.get("id")
 
-    print(f"[bold green][RÉSERVÉ][/bold green] Réservation #{res_id} enregistrée pour [cyan]{duration} min[/cyan].")
+    # Extraction propre de l'ULID (data["reservation"]["id"] selon CreateReservationOutputSchema)
+    reservation_data = data.get("reservation") if isinstance(data.get("reservation"), dict) else data
+    res_id = reservation_data.get("id")
+
+    print(f"[bold green][RÉSERVÉ][/bold green] Réservation #[cyan]{res_id}[/cyan] enregistrée pour [cyan]{duration} min[/cyan].")
     print(f"Image demandée : [magenta]{image_name}:{image_tag}[/magenta] | CPU : [cyan]{cpu}[/cyan] | RAM : [cyan]{ram_mb} Mo[/cyan]")
 
     if not wait:
@@ -145,12 +148,12 @@ def reserve_lab(
             time.sleep(2)
             check_resp = client.get(f"/reservations/{res_id}")
             current = check_resp.json()
-            st = str(current.get("status") or current.get("statut") or "").upper()
+            st = str(current.get("status") or "").upper()
 
-            if st in ("RUNNING", "PROVISIONING"):
+            if st in ("PENDING", "PROVISIONING"):
                 status_ui.update(f"[bold blue]Instance en cours de préparation ({st})...")
-            elif st in ("READY", "SUCCESS"):
-                print(f"[bold green][PRÊT][/bold green] L'instance #{res_id} est opérationnelle !")
+            elif st in ("RUNNING", "READY", "SUCCESS"):
+                print(f"[bold green][PRÊT][/bold green] L'instance #[cyan]{res_id}[/cyan] est opérationnelle !")
                 print(f"[cyan]Pour récupérer l'accès SSH :[/cyan] labhacker connect {res_id}")
                 break
             elif st in ("FAILED", "ERROR"):
@@ -160,7 +163,7 @@ def reserve_lab(
 
 @labs_app.command("list")
 def list_labs():
-    """Lister vos réservations (données renvoyées par l'API)."""
+    """Lister vos réservations (ULID complet sans troncature)."""
     client = APIClient()
     response = client.get("/reservations")
     reservations = response.json()
@@ -169,15 +172,20 @@ def list_labs():
         print("[yellow]Aucune réservation trouvée.[/yellow]")
         return
 
-    table = Table(title="Vos Réservations Lab Hacker", header_style="bold cyan")
-    table.add_column("ID Réservation", justify="center", style="dim")
+    table = Table(
+        title="Vos Réservations Lab Hacker",
+        header_style="bold cyan",
+        expand=True,
+    )
+    # overflow="fold" empêche les "..." et affiche les 26 caractères sur une seconde ligne si l'écran est trop serré
+    table.add_column("ID Réservation", justify="center", style="cyan", overflow="fold", min_width=26)
     table.add_column("Statut", justify="center")
     table.add_column("Durée", justify="center")
     table.add_column("Expiration", justify="center", style="yellow")
     table.add_column("Fin", justify="center", style="dim")
 
     for res in reservations:
-        st = str(res.get("status") or res.get("statut") or "-").upper()
+        st = str(res.get("status") or "-").upper()
         color = STATUS_COLORS.get(st, "white")
         formatted_status = f"[{color}]{st}[/{color}]" if st != "-" else "-"
 
@@ -185,8 +193,8 @@ def list_labs():
             str(res.get("id", "-")),
             formatted_status,
             f"{res.get('duration', '-')} min",
-            str(res.get("expiresAt", "-")),
-            str(res.get("endedAt", "-")),
+            str(res.get("expiresAt") or "-"),
+            str(res.get("endedAt") or "-"),
         )
 
     console.print(table)
@@ -194,31 +202,25 @@ def list_labs():
 
 @labs_app.command("status")
 def get_status(
-    reservation_id: Annotated[str, typer.Argument(help="Identifiant de la réservation")],
+    reservation_id: Annotated[str, typer.Argument(help="Identifiant ULID de la réservation")],
 ):
     """Afficher les détails d'une réservation."""
     client = APIClient()
     response = client.get(f"/reservations/{reservation_id}")
     res = response.json()
 
-    st = str(res.get("status") or res.get("statut") or "-").upper()
+    st = str(res.get("status") or "-").upper()
     color = STATUS_COLORS.get(st, "white")
 
     lines = [
-        f"[bold]ID :[/bold] {res.get('id', '-')}",
+        f"[bold]ID :[/bold] [cyan]{res.get('id', '-')}[/cyan]",
         f"[bold]Statut :[/bold] [{color}]{st}[/{color}]",
         f"[bold]Durée :[/bold] {res.get('duration', '-')} minutes",
-        f"[bold]Date d'expiration :[/bold] {res.get('expiresAt', '-')}",
-        f"[bold]Date de fin :[/bold] {res.get('endedAt', '-')}",
+        f"[bold]Date d'expiration :[/bold] {res.get('expiresAt') or '-'}",
+        f"[bold]Date de fin :[/bold] {res.get('endedAt') or '-'}",
     ]
 
-    if "machine" in res and isinstance(res["machine"], dict):
-        m = res["machine"]
-        lines.append(f"[bold]Machine ID :[/bold] {m.get('id', '-')}")
-        lines.append(f"[bold]Statut Machine :[/bold] {m.get('status', '-')}")
-
-    console.print(Panel("\n".join(lines), title=f"Détails Réservation #{reservation_id}", expand=False))
-
+    console.print(Panel("\n".join(lines), title=f"Détails Réservation", expand=False))
 
 @labs_app.command("connect")
 def connect_instance(
