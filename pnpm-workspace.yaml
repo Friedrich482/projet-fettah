@@ -11,4 +11,3 @@ allowBuilds:
   unrs-resolver: false
 syncInjectedDepsAfterScripts:
   - build
-confirmModulesPurge: false

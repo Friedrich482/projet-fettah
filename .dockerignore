@@ -4,7 +4,6 @@ tsconfig.tsbuildinfo
 .log
 **/.env*
 .dockerignore
-**/Dockerfile
 **/compose.*.yaml
 **/node_modules
 **/eslint.config.ts

@@ -14,7 +14,33 @@ services:
         condition: service_healthy
       prod-redis:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:$${PORT}/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
     container_name: projet-deploiement-api-container
+    networks:
+      - projet-deploiement-network
+
+  worker:
+    build:
+      context: .
+      dockerfile: apps/worker/Dockerfile
+    env_file:
+      - apps/worker/.env.prod
+    depends_on:
+      prod-database:
+        condition: service_healthy
+      prod-redis:
+        condition: service_healthy
+    group_add:
+      - "999"
+    user: "1000:1000"
+    container_name: projet-deploiement-worker-container
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
     networks:
       - projet-deploiement-network
 
@@ -40,7 +66,7 @@ services:
     container_name: projet-deploiement-redis-container
     expose:
       - 6379
-    command: /bin/sh -c 'redis-server --requirepass "$$REDIS_HOST_PASSWORD"'
+    command: /bin/sh -c "redis-server --requirepass $${REDIS_HOST_PASSWORD}"
     healthcheck:
       test:
         [
@@ -57,12 +83,31 @@ services:
     networks:
       - projet-deploiement-network
 
+  drizzle-gateway:
+    image: ghcr.io/drizzle-team/gateway:1.6.2
+    container_name: projet-deploiement-drizzle-gateway-container
+    restart: always
+    env_file:
+      - apps/api/.env.gateway
+    ports:
+      - 127.0.0.1:4992:4983
+    depends_on:
+      prod-database:
+        condition: service_healthy
+    volumes:
+      - projet-deploiement-drizzle-gateway:/app
+    networks:
+      - projet-deploiement-network
+
 volumes:
   projet-deploiement-database:
     name: projet-deploiement-database
 
   projet-deploiement-redis:
     name: projet-deploiement-redis
+
+  projet-deploiement-drizzle-gateway:
+    name: projet-deploiement-drizzle-gateway
 
 networks:
   projet-deploiement-network:
