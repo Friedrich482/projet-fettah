@@ -124,8 +124,8 @@ def reserve_lab(
     payload = {
         "imageName": image_name,
         "imageTag": image_tag,
-        "duration": int(duration),
-        "machineCpu": int(cpu),
+        "duration": int(duration * 60),
+        "machineCpu": int(cpu * 1000),
         "machineRam": int(ram_mb),
     }
 
@@ -192,7 +192,7 @@ def list_labs():
         table.add_row(
             str(res.get("id", "-")),
             formatted_status,
-            f"{res.get('duration', '-')} min",
+            f"{res.get('duration', '-')//60} min",
             str(res.get("expiresAt") or "-"),
             str(res.get("endedAt") or "-"),
         )
@@ -215,7 +215,7 @@ def get_status(
     lines = [
         f"[bold]ID :[/bold] [cyan]{res.get('id', '-')}[/cyan]",
         f"[bold]Statut :[/bold] [{color}]{st}[/{color}]",
-        f"[bold]Durée :[/bold] {res.get('duration', '-')} minutes",
+        f"[bold]Durée :[/bold] {res.get('duration', '-')//60} minutes",
         f"[bold]Date d'expiration :[/bold] {res.get('expiresAt') or '-'}",
         f"[bold]Date de fin :[/bold] {res.get('endedAt') or '-'}",
     ]

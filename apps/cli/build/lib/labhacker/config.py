@@ -7,7 +7,7 @@ from typing import Any, Dict
 CONFIG_DIR = Path.home() / ".labhacker"
 CONFIG_FILE = CONFIG_DIR / "config.json"
 
-DEFAULT_API_URL = "http://localhost/api"
+DEFAULT_API_URL = "http://localhost:3041"
 
 
 def load_config() -> Dict[str, Any]:

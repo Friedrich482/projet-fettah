@@ -4,3 +4,5 @@ dist
 tsconfig.tsbuildinfo
 .turbo
 AGENTS.md
+.venv
+__pycache__
