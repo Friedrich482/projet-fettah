@@ -74,7 +74,7 @@ services:
       prod-redis:
         condition: service_healthy
     group_add:
-      - "999"
+      - "${DOCKER_GID}"
     user: "1000:1000"
     container_name: projet-deploiement-worker-container
     volumes:
