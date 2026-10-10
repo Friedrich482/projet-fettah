@@ -1,0 +1,79 @@
+name: Projet deploiement CI/CD Pipeline - Build api, frontend and worker apps docker images and deploy to production
+
+on:
+  push:
+    branches: "main"
+  pull_request:
+    branches: "main"
+  workflow_dispatch:
+
+jobs:
+  setup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Setup nodejs and pnpm
+        uses: pnpm/setup@v2
+        with:
+          version: 12
+          runtime: node@24
+          cache: true
+
+      - name: Install dependencies
+        run: pnpm ci
+
+      - name: Lint project
+        run: pnpm run lint
+
+      - name: Typecheck project
+        run: pnpm run check-types
+
+  build:
+    runs-on: ubuntu-latest
+    needs: setup
+    strategy:
+      matrix:
+        include:
+          - app: api
+            image: projet-deploiement-api
+            dockerfile: apps/api/Dockerfile
+
+          - app: frontend
+            image: projet-deploiement-frontend
+            dockerfile: apps/frontend/Dockerfile
+
+          - app: worker
+            image: projet-deploiement-worker
+            dockerfile: apps/worker/worker
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Log in to Docker Hub
+        if: |
+          github.event_name == 'push' ||
+          (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main')
+        uses: docker/login-action@v4
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Build and push ${{ matrix.app }}
+        uses: docker/build-push-action@v7
+        env:
+          BUILDKIT_PROGRESS: plain
+        with:
+          context: .
+          file: ${{ matrix.dockerfile }}
+          platforms: linux/amd64
+          push: ${{ github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main') }}
+          tags: |
+            ${{ secrets.DOCKERHUB_USERNAME }}/${{ matrix.image }}:${{ github.sha }}
+            ${{ secrets.DOCKERHUB_USERNAME }}/${{ matrix.image }}:latest
+          cache-from: type=gha,scope=${{ matrix.app }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.app }}
