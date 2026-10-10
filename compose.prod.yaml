@@ -65,7 +65,7 @@ services:
       - projet-deploiement-network
 
   worker:
-    image: friedrich18/projet-deploiement-api
+    image: friedrich18/projet-deploiement-worker
     env_file:
       - apps/worker/.env.prod
     depends_on:
