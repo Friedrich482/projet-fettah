@@ -17,7 +17,7 @@ jobs:
       - name: Setup nodejs and pnpm
         uses: pnpm/setup@v2
         with:
-          version: 12
+          version: 12.10.1
           runtime: node@24
           cache: true
 
