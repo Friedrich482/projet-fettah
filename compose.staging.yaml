@@ -1,4 +1,4 @@
-name: projet-deploiement-prod
+name: projet-deploiement-staging
 
 services:
   frontend:
@@ -22,11 +22,11 @@ services:
     ports:
       - 127.0.0.1:3041:3040
     env_file:
-      - apps/api/.env.prod
+      - apps/api/.env.staging
     depends_on:
-      prod-database:
+      staging-database:
         condition: service_healthy
-      prod-redis:
+      staging-redis:
         condition: service_healthy
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://localhost:$${PORT}/health"]
@@ -43,11 +43,11 @@ services:
       context: .
       dockerfile: apps/worker/Dockerfile
     env_file:
-      - apps/worker/.env.prod
+      - apps/worker/.env.staging
     depends_on:
-      prod-database:
+      staging-database:
         condition: service_healthy
-      prod-redis:
+      staging-redis:
         condition: service_healthy
     group_add:
       - "999"
@@ -58,7 +58,7 @@ services:
     networks:
       - projet-deploiement-network
 
-  prod-database:
+  staging-database:
     image: postgres:17-alpine
     container_name: projet-deploiement-database-container
     expose:
@@ -75,7 +75,7 @@ services:
     networks:
       - projet-deploiement-network
 
-  prod-redis:
+  staging-redis:
     image: redis:8.10.2-alpine
     container_name: projet-deploiement-redis-container
     expose:
@@ -106,7 +106,7 @@ services:
     ports:
       - 127.0.0.1:4992:4983
     depends_on:
-      prod-database:
+      staging-database:
         condition: service_healthy
     volumes:
       - projet-deploiement-drizzle-gateway:/app
