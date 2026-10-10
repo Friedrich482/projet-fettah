@@ -68,3 +68,8 @@ But we need to have some example environment variables files created to make it 
   # apps/api/.env.gateway
   MASTERPASS=password
   ```
+Once those files have been created, build and start all the docker compose services with:
+
+```bash
+docker compose --progress=plain -f compose.staging.yaml up -d --remove-orphans --build
+```
