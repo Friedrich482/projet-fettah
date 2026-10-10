@@ -46,7 +46,7 @@ jobs:
 
           - app: worker
             image: projet-deploiement-worker
-            dockerfile: apps/worker/worker
+            dockerfile: apps/worker/Dockerfile
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
