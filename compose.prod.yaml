@@ -1,0 +1,155 @@
+name: projet-deploiement-prod
+
+services:
+  traefik:
+    image: traefik:v3.7.14
+    container_name: projet-deploiement-traefik-container
+    restart: always
+    command:
+      - "--providers.docker=true"
+      - "--providers.docker.exposedByDefault=false"
+      - "--providers.docker.network=projet-deploiement-network"
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.websecure.address=:443"
+      - "--entrypoints.web.http.redirections.entrypoint.to=websecure"
+      - "--entrypoints.web.http.redirections.entrypoint.scheme=https"
+      - "--certificatesresolvers.letsencrypt.acme.httpchallenge=true"
+      - "--certificatesresolvers.letsencrypt.acme.httpchallenge.entrypoint=web"
+      - "--certificatesresolvers.letsencrypt.acme.email=${ACME_EMAIL}"
+      - "--certificatesresolvers.letsencrypt.acme.storage=/letsencrypt/acme.json"
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - projet-deploiement-letsencrypt:/letsencrypt
+    networks:
+      - projet-deploiement-network
+
+  frontend:
+    image: friedrich18/projet-deploiement-frontend
+    depends_on:
+      - api
+    container_name: projet-deploiement-frontend-container
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.frontend.rule=Host(`${DOMAIN}`)"
+      - "traefik.http.routers.frontend.entrypoints=websecure"
+      - "traefik.http.routers.frontend.tls.certresolver=letsencrypt"
+      - "traefik.http.services.frontend.loadbalancer.server.port=80"
+    networks:
+      - projet-deploiement-network
+
+  api:
+    image: friedrich18/projet-deploiement-api
+    env_file:
+      - apps/api/.env.prod
+    depends_on:
+      prod-database:
+        condition: service_healthy
+      prod-redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:$${PORT}/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    container_name: projet-deploiement-api-container
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.api.rule=Host(`${API_DOMAIN}`)"
+      - "traefik.http.routers.api.entrypoints=websecure"
+      - "traefik.http.routers.api.tls.certresolver=letsencrypt"
+      - "traefik.http.services.api.loadbalancer.server.port=3040"
+    networks:
+      - projet-deploiement-network
+
+  worker:
+    image: friedrich18/projet-deploiement-api
+    env_file:
+      - apps/worker/.env.prod
+    depends_on:
+      prod-database:
+        condition: service_healthy
+      prod-redis:
+        condition: service_healthy
+    group_add:
+      - "999"
+    user: "1000:1000"
+    container_name: projet-deploiement-worker-container
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - projet-deploiement-network
+
+  prod-database:
+    image: postgres:17-alpine
+    container_name: projet-deploiement-database-container
+    expose:
+      - 5432
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -d $${POSTGRES_DB} -U $${POSTGRES_USER}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - projet-deploiement-database:/var/lib/postgresql/data
+    env_file:
+      - apps/api/.env.postgres
+    networks:
+      - projet-deploiement-network
+
+  prod-redis:
+    image: redis:8.10.2-alpine
+    container_name: projet-deploiement-redis-container
+    expose:
+      - 6379
+    command: /bin/sh -c "redis-server --requirepass $${REDIS_HOST_PASSWORD}"
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          'redis-cli -a "$$REDIS_HOST_PASSWORD" ping | grep -q PONG',
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - projet-deploiement-redis:/data
+    env_file:
+      - apps/api/.env.redis
+    networks:
+      - projet-deploiement-network
+
+  drizzle-gateway:
+    image: ghcr.io/drizzle-team/gateway:1.6.2
+    container_name: projet-deploiement-drizzle-gateway-container
+    restart: always
+    env_file:
+      - apps/api/.env.gateway
+    ports:
+      - 127.0.0.1:4992:4983
+    depends_on:
+      prod-database:
+        condition: service_healthy
+    volumes:
+      - projet-deploiement-drizzle-gateway:/app
+    networks:
+      - projet-deploiement-network
+
+volumes:
+  projet-deploiement-database:
+    name: projet-deploiement-database
+
+  projet-deploiement-redis:
+    name: projet-deploiement-redis
+
+  projet-deploiement-drizzle-gateway:
+    name: projet-deploiement-drizzle-gateway
+
+  projet-deploiement-letsencrypt:
+    name: projet-deploiement-letsencrypt
+
+networks:
+  projet-deploiement-network:
+    name: projet-deploiement-network
