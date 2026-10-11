@@ -79,6 +79,9 @@ jobs:
           cache-from: type=gha,scope=${{ matrix.app }}
           cache-to: type=gha,mode=max,scope=${{ matrix.app }}
 
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
       - name: Deploy to VPS
         uses: appleboy/ssh-action@v1.2.5
         with:
@@ -96,4 +99,4 @@ jobs:
             docker compose --progress=plain -f compose.prod.yaml up -d --remove-orphans --build
 
       - name: Verify deployment
-        run: curl -f https://api.labhacker.friedrichwt.dev/health
+        run: curl -f ${{secrets.API_BASE_URL}}/health
