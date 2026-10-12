@@ -7,6 +7,7 @@ export const EnvSchema = z.object({
   REDIS_PORT: z.coerce.number<number>().int().positive(),
   REDIS_HOST_PASSWORD: z.string().trim().min(1),
   WORKER_NAME: z.string().trim().min(1),
+  SSH_USERNAME: z.string().trim().min(1),
   MACHINES_NETWORK: z.string().trim().min(1),
   MACHINES_SSH_HOST_IP: z.ipv4(),
   DOCKER_SOCKET_PATH: z.string().trim().min(1),

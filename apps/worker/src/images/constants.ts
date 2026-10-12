@@ -4,7 +4,7 @@ export const IMAGE_DEFINITIONS = [
   {
     name: "lab/debian-ssh",
     tag: "12",
-    dir: "debian-ssh",
+    dir: "src/images/assets/debian-ssh",
     defaultCpu: 1000,
     defaultRam: 1024,
     exposedPort: 22,
@@ -12,7 +12,7 @@ export const IMAGE_DEFINITIONS = [
   {
     name: "lab/kali-ssh",
     tag: "latest",
-    dir: "kali-ssh",
+    dir: "src/images/assets/kali-ssh",
     defaultCpu: 1000,
     defaultRam: 2048,
     exposedPort: 22,

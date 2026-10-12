@@ -12,11 +12,7 @@ import { ProvisionJob } from "@repo/common/queues/types-schemas";
 import { db } from "@repo/db/db";
 import { images, machines, reservations } from "@repo/db/schema";
 
-import {
-  MILLISECONDS_PER_SECOND,
-  SSH_PASSWORD_BYTES,
-  SSH_USERNAME,
-} from "./constants";
+import { MILLISECONDS_PER_SECOND, SSH_PASSWORD_BYTES } from "./constants";
 import {
   ClaimMachineDtoType,
   CompleteProvisionDtoType,
@@ -111,7 +107,7 @@ export class ReservationsProcessor extends WorkerHost {
           status: "running",
           containerId,
           workerId: null,
-          sshUsername: SSH_USERNAME,
+          sshUsername: this.envService.get("SSH_USERNAME"),
           sshPassword,
           sshPort,
           lastError: null,
@@ -188,7 +184,7 @@ export class ReservationsProcessor extends WorkerHost {
 
       await this.dockerService.setContainerPassword({
         containerId,
-        username: SSH_USERNAME,
+        username: this.envService.get("SSH_USERNAME"),
         password: sshPassword,
       });
 

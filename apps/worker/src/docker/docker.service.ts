@@ -1,5 +1,6 @@
 import Dockerode from "dockerode";
 
+import { EnvService } from "@/env/env.service";
 import { Inject, Injectable, Logger } from "@nestjs/common";
 
 import {
@@ -32,6 +33,8 @@ export class DockerService {
   constructor(
     @Inject(DOCKER_CLIENT)
     private readonly client: Dockerode,
+
+    private readonly envService: EnvService,
   ) {}
 
   async ensureNetwork(ensureNetworkDto: EnsureNetworkDtoType) {
@@ -67,6 +70,9 @@ export class DockerService {
       {
         t: repository,
         dockerfile,
+        buildargs: {
+          SSH_USERNAME: this.envService.get("SSH_USERNAME"),
+        },
       },
     );
 

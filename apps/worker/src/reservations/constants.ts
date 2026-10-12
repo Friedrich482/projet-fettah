@@ -1,3 +1,2 @@
 export const MILLISECONDS_PER_SECOND = 1000;
-export const SSH_USERNAME = "root";
 export const SSH_PASSWORD_BYTES = 9;

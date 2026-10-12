@@ -1,10 +1,17 @@
 FROM debian:12
 
+ARG SSH_USERNAME
+ENV SSH_USERNAME=$SSH_USERNAME
+
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
         ca-certificates \
         openssh-server \
         curl \
+        nano \
+        vim \
+        iproute2 \
+        jq \
     && rm -rf /var/lib/apt/lists/*
 
 # sshd refuses to start without its privilege separation directory, and the
@@ -12,10 +19,12 @@ RUN apt-get update && \
 RUN mkdir -p /run/sshd
 
 RUN printf '%s\n' \
-        'PermitRootLogin yes' \
+        'PermitRootLogin no' \
         'PasswordAuthentication yes' \
         'UsePAM yes' \
         > /etc/ssh/sshd_config.d/lab.conf
+
+RUN useradd --create-home --shell /bin/bash ${SSH_USERNAME}
 
 EXPOSE 22
 
