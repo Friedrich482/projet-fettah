@@ -100,4 +100,4 @@ jobs:
             docker compose --progress=plain -f compose.prod.yaml up -d --remove-orphans --build
 
       - name: Verify deployment
-        run: curl -f ${{secrets.API_BASE_URL}}/health
+        run: curl -fs --retry 20 --retry-delay 5 --retry-connrefused "${{ secrets.API_BASE_URL }}/health"
