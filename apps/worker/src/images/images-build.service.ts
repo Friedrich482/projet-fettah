@@ -1,3 +1,5 @@
+import { join } from "node:path";
+
 import { Injectable, Logger, OnModuleInit } from "@nestjs/common";
 import { db } from "@repo/db/db";
 import { images } from "@repo/db/schema";
@@ -36,8 +38,8 @@ export class ImagesBuildService implements OnModuleInit {
 
     try {
       digest = await this.dockerService.buildImage({
-        contextPath: imagesRoot,
-        dockerfile: `${dir}/Dockerfile`,
+        contextPath: join(imagesRoot, dir),
+        dockerfile: "Dockerfile",
         name,
         tag,
       });
